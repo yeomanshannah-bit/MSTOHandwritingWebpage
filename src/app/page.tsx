@@ -1,65 +1,108 @@
+import Link from "next/link";
 import Image from "next/image";
+import IcebergModel from "@/components/IcebergModel";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="mx-auto max-w-5xl px-6 py-16 sm:py-24">
+      {/* Hero */}
+      <section className="flex items-center justify-between gap-8">
+        <div className="max-w-2xl">
+          <span className="inline-block rounded-full bg-msot-cyan/10 px-3 py-1 text-sm font-medium text-msot-navy">
+            Making Sense OT
+          </span>
+          <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight text-msot-navy sm:text-5xl">
+            Helping every child build confident handwriting.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-5 text-lg leading-8 text-foreground/70">
+            Free, evidence-based guidance on why handwriting matters — plus a
+            screening tool and a tailored 10-week program to support the
+            students in your care.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+
+        {/* Brand confetti mark — hidden on small screens so it never crowds
+            the text; shown alongside the headline on wider screens. */}
+        <Image
+          src="/brand/msot-mark.png"
+          alt=""
+          width={350}
+          height={414}
+          priority
+          className="hidden h-44 w-auto shrink-0 lg:block"
+        />
+      </section>
+
+      {/* Two entry points */}
+      <section className="mt-14 grid gap-6 sm:grid-cols-2">
+        <EntryCard
+          href="/why-handwriting-matters"
+          accent="msot-blue"
+          eyebrow="Free · No account needed"
+          title="Why handwriting matters"
+          body="The case for handwriting — academic benefits, brain & memory, literacy links, and confidence."
+          cta="Read the guide"
+        />
+        <EntryCard
+          href="/login"
+          accent="msot-teal"
+          eyebrow="For school support staff"
+          title="Screen a student"
+          body="Log in to screen a student across the foundational skill areas, then follow a personalised 10-week program."
+          cta="Log in to start"
+        />
+      </section>
+
+      {/* Scroll cue into the education section */}
+      <p className="mt-14 text-center text-sm text-foreground/50">
+        Scroll to learn why handwriting matters ↓
+      </p>
+
+      {/* Education: the iceberg model */}
+      <IcebergModel />
     </div>
+  );
+}
+
+/*
+  EntryCard — a small reusable card. Defining it in the same file keeps step 1
+  simple; we can move it to its own file later if we reuse it elsewhere.
+  `accent` is a brand colour name so each card can carry a different tone.
+*/
+function EntryCard({
+  href,
+  accent,
+  eyebrow,
+  title,
+  body,
+  cta,
+}: {
+  href: string;
+  accent: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+  cta: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col rounded-2xl border border-black/[.06] bg-white/70 p-7 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+    >
+      <span
+        className="text-xs font-semibold uppercase tracking-wide"
+        style={{ color: `var(--color-${accent})` }}
+      >
+        {eyebrow}
+      </span>
+      <h2 className="mt-2 text-2xl font-semibold text-msot-navy">{title}</h2>
+      <p className="mt-3 flex-1 leading-7 text-foreground/70">{body}</p>
+      <span
+        className="mt-6 inline-flex items-center gap-1 font-medium transition-transform group-hover:translate-x-0.5"
+        style={{ color: `var(--color-${accent})` }}
+      >
+        {cta} <span aria-hidden>→</span>
+      </span>
+    </Link>
   );
 }

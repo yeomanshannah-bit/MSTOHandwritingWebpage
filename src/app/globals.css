@@ -1,26 +1,27 @@
 @import "tailwindcss";
 
+/*
+  Making Sense OT brand palette — sampled from the brand logo.
+  Registering them here with Tailwind's @theme turns each colour into a
+  utility class, e.g. `text-msot-blue`, `bg-msot-teal`, `border-msot-cyan`.
+*/
+@theme {
+  --color-msot-blue: #0077bc; /* primary */
+  --color-msot-navy: #00558c;
+  --color-msot-red: #fd0100;
+  --color-msot-cyan: #01c6e3;
+  --color-msot-yellow: #ffd401;
+  --color-msot-pink: #ffabb1;
+  --color-msot-orange: #f5821f;
+  --color-msot-teal: #00bf8f;
+}
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #1c2430;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
