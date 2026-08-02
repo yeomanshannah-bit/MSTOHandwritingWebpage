@@ -25,3 +25,33 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/*
+  Speech-bubble pop, used by the iceberg foundation popovers. A slight
+  overshoot on the scale gives it a springy "pop" rather than a plain fade.
+  `transform-origin` is set inline so the bubble grows out of its tail.
+*/
+@keyframes bubble-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.bubble-pop {
+  animation: bubble-pop 220ms cubic-bezier(0.34, 1.3, 0.64, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble-pop {
+    animation: none;
+  }
+}

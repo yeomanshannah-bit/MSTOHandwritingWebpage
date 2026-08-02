@@ -37,6 +37,15 @@ export default async function StudentPage({
 
   const hasScreenings = screenings && screenings.length > 0;
 
+  // The flow is screen → baseline → program, so the card below points at
+  // whichever step is actually next.
+  const { data: baseline } = await supabase
+    .from("baseline_photos")
+    .select("id")
+    .eq("student_id", id)
+    .limit(1)
+    .maybeSingle();
+
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
       <Link
@@ -71,6 +80,25 @@ export default async function StudentPage({
           </p>
         </div>
         <span aria-hidden className="text-2xl">
+          →
+        </span>
+      </Link>
+
+      <Link
+        href={`/students/${id}/${baseline ? "program" : "baseline"}`}
+        className="mt-3 flex items-center justify-between rounded-2xl border border-msot-teal/30 bg-msot-teal/[.07] p-6 transition-colors hover:bg-msot-teal/[.12]"
+      >
+        <div>
+          <p className="text-lg font-semibold text-msot-navy">
+            {baseline ? "10-week program" : "Baseline writing sample"}
+          </p>
+          <p className="text-sm text-foreground/65">
+            {baseline
+              ? "Work through one session a week, unlocking as you go."
+              : "Capture a writing sample before the program starts."}
+          </p>
+        </div>
+        <span aria-hidden className="text-2xl text-msot-teal">
           →
         </span>
       </Link>

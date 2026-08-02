@@ -30,6 +30,12 @@ export default function SiteHeader() {
             Why it matters
           </Link>
           <Link
+            href="/programs"
+            className="text-foreground/70 transition-colors hover:text-msot-blue"
+          >
+            Handwriting programs
+          </Link>
+          <Link
             href="/login"
             className="rounded-full bg-msot-blue px-4 py-2 text-white transition-colors hover:bg-msot-navy"
           >

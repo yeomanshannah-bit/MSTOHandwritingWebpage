@@ -8,16 +8,17 @@ export default function Home() {
       {/* Hero */}
       <section className="flex items-center justify-between gap-8">
         <div className="max-w-2xl">
-          <span className="inline-block rounded-full bg-msot-cyan/10 px-3 py-1 text-sm font-medium text-msot-navy">
-            Making Sense OT
-          </span>
-          <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight text-msot-navy sm:text-5xl">
+          <h1 className="text-4xl font-bold leading-tight tracking-tight text-msot-navy sm:text-5xl">
             Helping every child build confident handwriting.
           </h1>
           <p className="mt-5 text-lg leading-8 text-foreground/70">
-            Free, evidence-based guidance on why handwriting matters — plus a
-            screening tool and a tailored 10-week program to support the
-            students in your care.
+            Evidence-based guidance on why handwriting matters, a screening
+            tool, and a tailored 10-week program to support the students in
+            your care.
+          </p>
+          <p className="mt-4 text-lg leading-8 text-foreground/70">
+            Built on the foundation of 20 years of childhood occupational
+            therapy.
           </p>
         </div>
 
