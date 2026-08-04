@@ -22,7 +22,7 @@ export default async function StudentPage({
 
   const { data: student } = await supabase
     .from("students")
-    .select("id, initials, year_level")
+    .select("id, initials, year_level, term, class_name, created_at")
     .eq("id", id)
     .single();
 
@@ -63,7 +63,19 @@ export default async function StudentPage({
           <h1 className="text-2xl font-bold text-msot-navy">
             {student.initials}
           </h1>
-          <p className="text-foreground/60">{student.year_level}</p>
+          <p className="text-foreground/60">
+            {[student.year_level, student.term, student.class_name]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          <p className="text-sm text-foreground/45">
+            Profile created{" "}
+            {new Date(student.created_at).toLocaleDateString(undefined, {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </p>
         </div>
       </div>
 

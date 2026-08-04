@@ -1,7 +1,35 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { scoreScreening, type Responses } from "@/lib/screening";
+import ShapeGlyph from "@/components/ShapeGlyph";
+import {
+  scoreScreening,
+  suggestLetters,
+  preWritingShapes,
+  shapeOptions,
+  statusLabel,
+  closingNote,
+  type Responses,
+  type Shapes,
+  type FoundationStatus,
+} from "@/lib/screening";
+
+/*
+  The results read in the same order as the screener: what was noticed at the
+  surface, then the eight foundations beneath it, then the confidence thread.
+*/
+
+const statusStyle: Record<FoundationStatus, string> = {
+  support: "bg-msot-red/10 text-msot-red",
+  monitor: "bg-msot-yellow/25 text-msot-navy",
+  clear: "bg-black/[.04] text-foreground/50",
+};
+
+type Reflection = {
+  recommendations?: string[];
+  strengths?: string;
+  comments?: string;
+};
 
 export default async function ResultsPage({
   params,
@@ -18,13 +46,13 @@ export default async function ResultsPage({
 
   const { data: student } = await supabase
     .from("students")
-    .select("initials, year_level")
+    .select("initials, year_level, term, class_name")
     .eq("id", id)
     .single();
 
   const { data: screening } = await supabase
     .from("screenings")
-    .select("responses, created_at")
+    .select("responses, shapes, reflection, created_at")
     .eq("id", screeningId)
     .single();
 
@@ -32,7 +60,15 @@ export default async function ResultsPage({
 
   // Recompute the summary from the stored answers (one source of truth).
   const result = scoreScreening(screening.responses as Responses);
-  const { flaggedDomains, totals, domains, onTrack } = result;
+  const { notice, foundations, flaggedFoundations, confidence, onTrack } =
+    result;
+
+  const shapes = (screening.shapes ?? {}) as Shapes;
+  const suggestion = suggestLetters(shapes);
+  const reflection = (screening.reflection ?? {}) as Reflection;
+  const ratedShapes = preWritingShapes.filter(
+    (s) => shapes[s.id] && shapes[s.id] !== "not-assessed",
+  );
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
@@ -47,50 +83,117 @@ export default async function ResultsPage({
         Screening results
       </p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight text-msot-navy">
-        {student.initials} · {student.year_level}
+        {student.initials}
       </h1>
+      <p className="mt-1 text-foreground/60">
+        {[student.year_level, student.term, student.class_name]
+          .filter(Boolean)
+          .join(" · ")}
+        {" · screened "}
+        {new Date(screening.created_at).toLocaleDateString(undefined, {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })}
+      </p>
 
-      {/* Overall tally */}
-      <div className="mt-6 grid grid-cols-3 gap-3">
-        <Tally color="bg-msot-teal" n={totals.green} label="Age-appropriate" />
-        <Tally color="bg-msot-yellow" n={totals.yellow} label="Emerging" />
-        <Tally color="bg-msot-red" n={totals.red} label="Not present" />
+      {/* ── Part 1 · the tip ─────────────────────────────────────── */}
+      <h2 className="mt-10 text-xl font-semibold text-msot-navy">
+        What you can see
+      </h2>
+      <div
+        className={`mt-3 rounded-2xl p-5 ${
+          notice.affectingParticipation
+            ? "bg-msot-blue/[.06]"
+            : "bg-msot-teal/[.08]"
+        }`}
+      >
+        <p className="font-medium text-msot-navy">
+          {notice.affectingParticipation
+            ? "Handwriting appears to be affecting participation."
+            : "Handwriting does not currently appear to be affecting participation."}
+        </p>
+        <p className="mt-1.5 text-sm text-foreground/70">
+          {notice.often} often · {notice.sometimes} sometimes ·{" "}
+          {notice.rarely} rarely
+          {notice.unsure > 0 && ` · ${notice.unsure} not sure`}
+        </p>
       </div>
 
-      {/* Priority areas — every flagged domain, worst first */}
+      {/* ── Part 2 · the foundations ─────────────────────────────── */}
+      <h2 className="mt-10 text-xl font-semibold text-msot-navy">
+        Foundation areas
+      </h2>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full min-w-[26rem] text-sm">
+          <thead>
+            <tr className="border-b border-black/10 text-left text-xs uppercase tracking-wide text-foreground/50">
+              <th className="py-2 pr-2 font-semibold">Foundation</th>
+              <th className="px-2 py-2 text-center font-semibold">Often</th>
+              <th className="px-2 py-2 text-center font-semibold">Sometimes</th>
+              <th className="py-2 pl-2 text-right font-semibold">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {foundations.map((f) => (
+              <tr key={f.id} className="border-b border-black/[.05]">
+                <td className="py-2.5 pr-2 text-foreground/85">
+                  <span className="text-foreground/40">{f.number}. </span>
+                  {f.title}
+                </td>
+                <td className="px-2 py-2.5 text-center tabular-nums text-foreground/70">
+                  {f.often}
+                </td>
+                <td className="px-2 py-2.5 text-center tabular-nums text-foreground/70">
+                  {f.sometimes}
+                </td>
+                <td className="py-2.5 pl-2 text-right">
+                  <span
+                    className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${statusStyle[f.status]}`}
+                  >
+                    {statusLabel[f.status]}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Priority areas — every flagged foundation, worst first */}
       <h2 className="mt-10 text-xl font-semibold text-msot-navy">
         Areas to focus on
       </h2>
       {!onTrack ? (
         <>
           <p className="mt-1 text-sm text-foreground/60">
-            {flaggedDomains.length} area
-            {flaggedDomains.length > 1 ? "s" : ""} flagged (any &ldquo;not
-            present&rdquo;, or 2+ &ldquo;emerging&rdquo; skills).
+            {flaggedFoundations.length} foundation
+            {flaggedFoundations.length > 1 ? "s" : ""} flagged. The program
+            draws on these, most-affected first.
           </p>
           <div className="mt-3 space-y-3">
-            {flaggedDomains.map((d, i) => (
+            {flaggedFoundations.map((f, i) => (
               <div
-                key={d.id}
+                key={f.id}
                 className="rounded-xl border border-msot-blue/15 bg-msot-blue/[.04] p-4"
               >
                 <div className="flex items-center gap-3">
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-msot-blue text-sm font-bold text-white">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-msot-blue text-sm font-bold text-white">
                     {i + 1}
                   </span>
                   <span className="font-semibold text-msot-navy">
-                    {d.title}
+                    {f.title}
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-foreground/70">
                   {[
-                    d.red > 0 &&
-                      `${d.red} not present`,
-                    d.yellow > 0 && `${d.yellow} emerging`,
+                    f.often > 0 && `${f.often} often`,
+                    f.sometimes > 0 && `${f.sometimes} sometimes`,
                   ]
                     .filter(Boolean)
                     .join(", ")}
-                  {" — will be a focus of the program."}
+                  {" — "}
+                  {statusLabel[f.status].toLowerCase()}.
                 </p>
               </div>
             ))}
@@ -98,41 +201,127 @@ export default async function ResultsPage({
         </>
       ) : (
         <p className="mt-3 rounded-xl bg-msot-teal/[.08] p-4 text-foreground/80">
-          No areas flagged — skills look age-appropriate across the board. 🎉
+          No foundations flagged — nothing beneath the surface stood out. 🎉
         </p>
       )}
 
-      {/* Full breakdown */}
+      {/* ── Pre-writing shapes ───────────────────────────────────── */}
       <h2 className="mt-10 text-xl font-semibold text-msot-navy">
-        Full breakdown
+        Pre-writing shapes
       </h2>
-      <div className="mt-3 space-y-3">
-        {domains.map((d) => {
-          const totalSkills = d.green + d.yellow + d.red || 1;
-          const pct = (n: number) => `${(n / totalSkills) * 100}%`;
-          return (
-            <div key={d.id}>
-              <div className="flex justify-between text-sm">
-                <span className="text-foreground/80">{d.title}</span>
-                <span className="text-foreground/50">
-                  {d.green + d.yellow + d.red} skills
-                </span>
-              </div>
-              <div className="mt-1 flex h-2.5 overflow-hidden rounded-full bg-black/5">
-                <span className="bg-msot-teal" style={{ width: pct(d.green) }} />
-                <span
-                  className="bg-msot-yellow"
-                  style={{ width: pct(d.yellow) }}
+      {ratedShapes.length > 0 ? (
+        <>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {ratedShapes.map((s) => (
+              <span
+                key={s.id}
+                className="flex items-center gap-2 rounded-xl border border-black/[.08] bg-white/70 px-3 py-2"
+              >
+                <ShapeGlyph
+                  shape={s.id}
+                  className="h-6 w-6 shrink-0 text-msot-navy"
                 />
-                <span className="bg-msot-red" style={{ width: pct(d.red) }} />
-              </div>
+                <span className="text-sm text-foreground/80">
+                  {s.label}
+                  <span className="text-foreground/50">
+                    {" — "}
+                    {shapeOptions
+                      .find((o) => o.value === shapes[s.id])
+                      ?.label.toLowerCase()}
+                  </span>
+                </span>
+              </span>
+            ))}
+          </div>
+
+          {suggestion.ready && suggestion.groups.length > 0 && (
+            <div className="mt-4 rounded-2xl border border-msot-orange/25 bg-msot-orange/[.05] p-5">
+              <p className="font-semibold text-msot-navy">
+                Letters to introduce first
+              </p>
+              <ul className="mt-2 space-y-2">
+                {suggestion.groups.map((g) => (
+                  <li key={g.letters}>
+                    <p className="font-mono text-base tracking-wider text-msot-navy">
+                      {g.letters}
+                    </p>
+                    <p className="text-xs text-foreground/60">{g.because}</p>
+                  </li>
+                ))}
+              </ul>
             </div>
-          );
-        })}
+          )}
+        </>
+      ) : (
+        <p className="mt-3 text-foreground/60">
+          The shape check wasn&apos;t completed for this screening.
+        </p>
+      )}
+
+      {/* ── Part 3 · confidence ──────────────────────────────────── */}
+      <h2 className="mt-10 text-xl font-semibold text-msot-navy">
+        Writing confidence
+      </h2>
+      <div className="mt-3 rounded-2xl bg-msot-pink/[.07] p-5">
+        <p className="font-medium text-msot-navy">
+          {confidence.raised
+            ? "How this child feels about writing needs attention alongside the foundations."
+            : "No particular concerns about how this child feels about writing."}
+        </p>
+        <p className="mt-1.5 text-sm text-foreground/70">
+          {confidence.often} often · {confidence.sometimes} sometimes
+        </p>
       </div>
 
-      {/* Next step → baseline photo, then program (built next) */}
-      <div className="mt-12 rounded-2xl bg-msot-teal/[.08] p-6">
+      {/* ── The teacher's own read ───────────────────────────────── */}
+      {(reflection.recommendations?.length ||
+        reflection.strengths ||
+        reflection.comments) && (
+        <>
+          <h2 className="mt-10 text-xl font-semibold text-msot-navy">
+            Teacher recommendation
+          </h2>
+          {reflection.recommendations?.length ? (
+            <ul className="mt-3 space-y-2">
+              {reflection.recommendations.map((r) => (
+                <li
+                  key={r}
+                  className="rounded-xl border border-black/[.08] bg-white/70 px-4 py-3 text-sm text-foreground/80"
+                >
+                  {r}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {reflection.strengths && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-msot-navy">
+                Strengths observed
+              </p>
+              <p className="mt-1 whitespace-pre-line text-foreground/75">
+                {reflection.strengths}
+              </p>
+            </div>
+          )}
+          {reflection.comments && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-msot-navy">
+                Additional comments
+              </p>
+              <p className="mt-1 whitespace-pre-line text-foreground/75">
+                {reflection.comments}
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      <p className="mt-8 rounded-xl bg-black/[.03] p-4 text-sm leading-6 text-foreground/70">
+        {closingNote}
+      </p>
+
+      {/* Next step → baseline photo, then program */}
+      <div className="mt-10 rounded-2xl bg-msot-teal/[.08] p-6">
         <h2 className="text-lg font-semibold text-msot-navy">Next step</h2>
         <p className="mt-2 text-foreground/70">
           Upload a baseline photo of {student.initials} writing the alphabet, so
@@ -145,24 +334,6 @@ export default async function ResultsPage({
           Continue to baseline photo →
         </Link>
       </div>
-    </div>
-  );
-}
-
-function Tally({
-  color,
-  n,
-  label,
-}: {
-  color: string;
-  n: number;
-  label: string;
-}) {
-  return (
-    <div className="rounded-xl border border-black/[.06] bg-white/70 p-4 text-center">
-      <div className={`mx-auto h-3 w-3 rounded-full ${color}`} />
-      <p className="mt-2 text-2xl font-bold text-msot-navy">{n}</p>
-      <p className="text-xs text-foreground/60">{label}</p>
     </div>
   );
 }

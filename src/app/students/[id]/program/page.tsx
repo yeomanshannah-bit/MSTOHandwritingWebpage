@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { scoreScreening, type Responses } from "@/lib/screening";
-import { toProgramDomainIds } from "@/lib/screeningToProgram";
 import { buildProgram, sessionCounts, MAX_DOMAINS } from "@/lib/programBuilder";
 import {
   essentialRule,
@@ -79,10 +78,12 @@ export default async function StudentProgramPage({
       .limit(1)
       .maybeSingle();
 
+    // The screener's foundation ids ARE the program's domain ids, so the
+    // flagged list feeds straight in — worst first.
     const flagged = screening
-      ? scoreScreening(screening.responses as Responses).flaggedDomains
+      ? scoreScreening(screening.responses as Responses).flaggedFoundations
       : [];
-    const domainIds = toProgramDomainIds(flagged.map((d) => d.id));
+    const domainIds = flagged.map((f) => f.id);
     const preview = buildProgram(domainIds);
 
     async function build() {

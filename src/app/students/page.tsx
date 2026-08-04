@@ -17,7 +17,7 @@ export default async function StudentsPage() {
 
   const { data: students } = await supabase
     .from("students")
-    .select("id, initials, year_level, created_at")
+    .select("id, initials, year_level, term, class_name, created_at")
     .order("created_at", { ascending: false });
 
   const hasStudents = students && students.length > 0;
@@ -62,9 +62,21 @@ export default async function StudentsPage() {
                       {s.initials}
                     </p>
                     <p className="text-sm text-foreground/60">
-                      {s.year_level}
+                      {/* Year level always shows; term and class only when
+                          set, so older profiles don't render stray dots. */}
+                      {[s.year_level, s.term, s.class_name]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                   </div>
+                  <span className="hidden text-xs text-foreground/40 sm:block">
+                    Added{" "}
+                    {new Date(s.created_at).toLocaleDateString(undefined, {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
                   <span className="text-foreground/40" aria-hidden>
                     →
                   </span>

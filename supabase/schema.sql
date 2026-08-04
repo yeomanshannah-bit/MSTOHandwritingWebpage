@@ -14,8 +14,17 @@ create table if not exists public.students (
   staff_id   uuid not null references auth.users (id) on delete cascade,
   initials   text not null,
   year_level text not null,
+  term       text,
+  class_name text,
   created_at timestamptz not null default now()
 );
+
+-- Added after the first release, so existing databases need these too.
+-- `term` is which term of the year the profile was started in; `class_name`
+-- is optional free text (e.g. "3B", "Room 12") for staff who juggle several
+-- classes. Both are nullable so rows created before this change stay valid.
+alter table public.students add column if not exists term text;
+alter table public.students add column if not exists class_name text;
 
 grant select, insert, update, delete on public.students to authenticated;
 alter table public.students enable row level security;
@@ -38,8 +47,20 @@ create table if not exists public.screenings (
   staff_id   uuid not null references auth.users (id) on delete cascade,
   responses  jsonb not null default '{}'::jsonb,
   results    jsonb,
+  shapes     jsonb not null default '{}'::jsonb,
+  reflection jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
+
+-- Added with the iceberg screener rework.
+--   shapes     = the pre-writing shape check, e.g. { "circle": "with-demo" }.
+--                Kept apart from `responses` because it uses its own scale.
+--   reflection = the teacher's own read: { recommendations, strengths,
+--                comments }.
+alter table public.screenings
+  add column if not exists shapes jsonb not null default '{}'::jsonb;
+alter table public.screenings
+  add column if not exists reflection jsonb not null default '{}'::jsonb;
 
 grant select, insert, update, delete on public.screenings to authenticated;
 alter table public.screenings enable row level security;

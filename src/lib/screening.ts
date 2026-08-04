@@ -1,104 +1,460 @@
 /*
-  The screening tool's content, as data (ported from Hannah's "Webform
-  Screening Tool Questions" doc). Keeping it here — separate from any UI —
-  means we can render it, score it, and tweak wording in one place.
+  The screening tool's content, as data (ported from Hannah's "Screener word
+  modified" doc). Keeping it here — separate from any UI — means we can render
+  it, score it, and tweak wording in one place.
 
-  Each domain is a heading; each skill under it is rated on a traffic light:
-    green  = age-appropriate
-    yellow = emerging (sometimes present)
-    red    = not present
+  The tool mirrors the iceberg, top to bottom:
+
+    PART 1 · NOTICE      the tip — is handwriting affecting participation?
+    PART 2 · UNDERSTAND  the eight foundations beneath the surface
+                         (with a pre-writing shape check inside visual-motor)
+    PART 3 · CONFIDENCE  the thread running through all of it
+
+  Part 3 is deliberately NOT a ninth foundation: distress is usually a
+  consequence of writing being hard, not the original cause, so it is reported
+  alongside the foundations and never drives the program.
 */
 
-export type Rating = "green" | "yellow" | "red";
+// ── Rating scale ─────────────────────────────────────────────────
+// Frequency, not quality: teachers rate how often they notice something
+// across several activities, not how good the child is. Higher = more
+// concern, which is the opposite of the old "age-appropriate" scale.
+export type Rating = "rarely" | "sometimes" | "often" | "unsure";
 
-/** The three traffic-light options, shown for every skill. `concern` is the
-    hidden weight used later to work out the areas of most difficulty. */
+/**
+ * The four options shown for every statement. `concern` is the hidden weight
+ * used to work out which foundations need support — `null` for "Not sure",
+ * which is an explicit "I haven't seen this" and is left out of scoring
+ * entirely rather than being counted as no concern.
+ */
 export const ratingOptions: {
   value: Rating;
   label: string;
-  short: string;
-  concern: number;
+  hint?: string;
+  concern: number | null;
 }[] = [
-  { value: "green", label: "Age-appropriate", short: "Age-appropriate", concern: 0 },
-  { value: "yellow", label: "Emerging — sometimes present", short: "Emerging", concern: 1 },
-  { value: "red", label: "Not present", short: "Not present", concern: 2 },
+  { value: "rarely", label: "Rarely", hint: "not observed / rarely", concern: 0 },
+  { value: "sometimes", label: "Sometimes", concern: 1 },
+  { value: "often", label: "Often", concern: 2 },
+  { value: "unsure", label: "Not sure", hint: "not observed in class", concern: null },
 ];
 
-export type Skill = { id: string; label: string };
-export type Domain = { id: string; title: string; skills: Skill[] };
+export const concernOf: Record<Rating, number | null> = {
+  rarely: 0,
+  sometimes: 1,
+  often: 2,
+  unsure: null,
+};
 
-/** Small helper so each skill gets a stable id like "fine-motor-3". */
-function domain(id: string, title: string, skills: string[]): Domain {
+export type Item = { id: string; label: string };
+
+/** Small helper so each statement gets a stable id like "fine-motor-control-3". */
+function items(prefix: string, labels: string[]): Item[] {
+  return labels.map((label, i) => ({ id: `${prefix}-${i + 1}`, label }));
+}
+
+// ── Guidance shown at the top ────────────────────────────────────
+
+export const senseIntro =
+  "Hi, I'm Sense. Handwriting sits at the tip of an iceberg. This tool mirrors the iceberg exactly — first we notice whether handwriting is affecting participation, then we look underneath at the eight foundations, and we keep an eye on how the child feels about writing. Let's make sense of it together.";
+
+export const ratingGuidance =
+  "Rate each statement on what you have noticed across several classroom activities — not a single difficult writing lesson.";
+
+export const yearOneGuidance =
+  "Rate against typical Year 1 expectations (the second year of school). Occasional letter reversals remain developmentally normal to about age seven — flag the reversal item only if reversals are frequent or persistent.";
+
+export const curriculumAnchor = "AC9E1LY08";
+
+// ── PART 1 · NOTICE — the tip of the iceberg ─────────────────────
+
+export const noticeItems: Item[] = items("notice", [
+  "The child's handwriting is difficult to read.",
+  "Letters are formed incorrectly or inconsistently.",
+  "Letter size, spacing or placement on the line is inconsistent.",
+  "Writing is noticeably slower or more effortful than expected.",
+  "The child has difficulty completing an appropriate amount of written work.",
+  "Handwriting quality deteriorates as the task continues.",
+  "The child reports hand pain, discomfort or tiredness.",
+  "The child avoids, resists or becomes distressed by writing.",
+]);
+
+// ── PART 2 · UNDERSTAND — the eight foundations ──────────────────
+
+export type Foundation = {
+  id: string;
+  /** 1-8, matching the numbering on the iceberg. */
+  number: number;
+  title: string;
+  /** Optional line shown under the heading (e.g. a curriculum anchor). */
+  note?: string;
+  items: Item[];
+};
+
+function foundation(
+  number: number,
+  id: string,
+  title: string,
+  labels: string[],
+  note?: string,
+): Foundation {
+  return { id, number, title, note, items: items(id, labels) };
+}
+
+/**
+ * The eight foundations, in iceberg order (top of the submerged mass down).
+ * These ids are shared with lib/icebergContent.ts and lib/programContent.ts —
+ * a flagged foundation here looks up its program sessions by the same id, so
+ * they must never drift apart.
+ */
+export const foundations: Foundation[] = [
+  foundation(1, "postural-control", "Postural Control", [
+    "The child slumps, leans heavily on the desk or supports their head while writing.",
+    "The child has difficulty keeping their feet and body stable.",
+    "The child frequently changes position or leaves their seat during writing.",
+    "The child appears physically tired during longer writing activities.",
+    "The child uses large movements from the shoulder rather than controlled movements of the hand and fingers.",
+  ]),
+  foundation(2, "bilateral-coordination", "Bilateral Coordination", [
+    "The child does not consistently use their other hand to hold the paper.",
+    "The child frequently swaps the pencil between hands.",
+    "The child turns their body or paper excessively instead of reaching across the page.",
+    "The child has difficulty moving smoothly across the page from left to right.",
+    "The child also finds two-handed classroom activities, such as cutting, ruling or opening containers, difficult.",
+  ]),
+  foundation(3, "fine-motor-control", "Fine Motor Control", [
+    "The child has difficulty making small, controlled pencil movements.",
+    "The child holds the pencil very tightly, awkwardly or with more fingers than appear necessary for control.",
+    "The child presses extremely hard or produces marks that are unusually faint.",
+    "The child's hand becomes tired, sore or shaky during writing.",
+    "Letter formation and pencil control deteriorate as the task continues.",
+  ]),
+  foundation(4, "sensory-regulation", "Sensory Regulation & Body Awareness", [
+    "The child has difficulty settling their body and becoming ready to write.",
+    "The child is easily distracted or distressed by ordinary classroom noise, touch or movement.",
+    "The child frequently seeks movement, pressure or tactile input during writing.",
+    "The child appears unaware of how much pressure they are using with the pencil.",
+    "The child does not readily notice when their position is uncomfortable or their hand is becoming tired.",
+  ]),
+  foundation(5, "visual-perception", "Visual Perception", [
+    "The child confuses letters or shapes that look similar.",
+    "The child frequently reverses letters beyond what would be expected for their age and stage of learning.",
+    "The child has difficulty judging spaces between letters or words.",
+    "The child loses their place when reading, copying or moving across a worksheet.",
+    "The child has difficulty remembering the visual appearance of familiar letters.",
+  ]),
+  foundation(6, "visual-motor-integration", "Visual-Motor Integration", [
+    "The child has difficulty copying pre-writing shapes expected for their developmental level.",
+    "The child has difficulty copying simple patterns, drawings or letters.",
+    "Letters are uneven in size or poorly positioned on the writing line.",
+    "The child finds copying from the board more difficult than copying from a nearby model.",
+    "What the child produces on paper does not closely resemble the model, even when they appear to understand the task.",
+  ]),
+  foundation(7, "attention-executive-function", "Attention & Executive Function", [
+    "The child has difficulty beginning a writing task, even when they understand what to do.",
+    "The child loses focus before completing a short, appropriate writing activity.",
+    "The child forgets instructions or loses track of the next step.",
+    "The child has difficulty organising their materials, ideas or space on the page.",
+    "The child becomes overwhelmed when required to think of ideas, spell and form letters at the same time.",
+  ]),
+  foundation(
+    8,
+    "language-letter-knowledge",
+    "Language & Letter Knowledge",
+    [
+      "The child has difficulty understanding the language used in writing instructions.",
+      "The child has difficulty expressing their idea verbally before writing.",
+      "The child does not consistently recognise or name letters expected for their stage of learning.",
+      "The child has difficulty connecting letters with their corresponding sounds.",
+      "The child cannot readily recall how to form familiar letters without copying a model.",
+    ],
+    "Australian Curriculum anchor: AC9E1LY08 — write words using unjoined lower-case and upper-case letters",
+  ),
+];
+
+/** The foundation the pre-writing shape check sits inside. */
+export const SHAPE_CHECK_AFTER = "visual-motor-integration";
+
+// ── Pre-writing shape check ──────────────────────────────────────
+// A direct task rather than an observation: the teacher asks the child to
+// copy each shape. Shapes are the movements letters are built from, so this
+// is what decides which letters to introduce first.
+
+export type ShapeRating =
+  | "independent"
+  | "with-demo"
+  | "not-yet"
+  | "not-assessed";
+
+export const shapeOptions: { value: ShapeRating; label: string }[] = [
+  { value: "independent", label: "Independently" },
+  { value: "with-demo", label: "With demo" },
+  { value: "not-yet", label: "Not yet" },
+  { value: "not-assessed", label: "Not assessed" },
+];
+
+/** `glyph` names the drawing in components/ShapeGlyph.tsx. */
+export type PreWritingShape = { id: string; label: string };
+
+export const preWritingShapes: PreWritingShape[] = [
+  { id: "vertical", label: "Vertical line" },
+  { id: "horizontal", label: "Horizontal line" },
+  { id: "circle", label: "Circle" },
+  { id: "cross", label: "Cross" },
+  { id: "square", label: "Square" },
+  { id: "diagonal", label: "Diagonal lines" },
+  { id: "x", label: "X" },
+  { id: "triangle", label: "Triangle" },
+  { id: "diamond", label: "Diamond" },
+];
+
+export const shapeCheckIntro =
+  "Ask the child to copy each shape. This helps decide which letters to introduce first — the shapes are the movements that build letters.";
+
+export const shapeCheckHint =
+  "Rate at least the vertical, horizontal and circle shapes and Sense will suggest which letters to introduce first.";
+
+/** The three shapes that must be rated before a letter suggestion is offered. */
+export const SHAPE_SUGGESTION_REQUIRES = ["vertical", "horizontal", "circle"];
+
+export type Shapes = Record<string, ShapeRating>;
+
+/**
+ * Which letters to introduce first, based on the shapes the child can already
+ * make. A shape counts as available when it's copied independently or with a
+ * demo — "with demo" means the movement is there and just needs teaching.
+ *
+ * PLACEHOLDER GROUPING — the letter sets follow the usual shape-to-letter
+ * progression, but Hannah should confirm them against the program before this
+ * is relied on clinically.
+ */
+export function suggestLetters(shapes: Shapes): {
+  ready: boolean;
+  groups: { letters: string; because: string }[];
+} {
+  const has = (id: string) =>
+    shapes[id] === "independent" || shapes[id] === "with-demo";
+
+  const rated = SHAPE_SUGGESTION_REQUIRES.every(
+    (id) => shapes[id] && shapes[id] !== "not-assessed",
+  );
+  if (!rated) return { ready: false, groups: [] };
+
+  const groups: { letters: string; because: string }[] = [];
+
+  if (has("vertical") && has("horizontal")) {
+    groups.push({
+      letters: "L  T  I  E  F  H",
+      because: "built from vertical and horizontal lines",
+    });
+  }
+  if (has("circle")) {
+    groups.push({
+      letters: "O  C  o  c  a  d  g  q",
+      because: "built from the circle",
+    });
+  }
+  if (has("circle") && has("vertical")) {
+    groups.push({
+      letters: "b  p  D  P  B",
+      because: "a circle joined to a vertical line",
+    });
+  }
+  if (has("diagonal") || has("x")) {
+    groups.push({
+      letters: "V  A  W  X  Y  K  N  M  Z",
+      because: "built from diagonal lines",
+    });
+  }
+
+  return { ready: true, groups };
+}
+
+// ── PART 3 · CONFIDENCE ──────────────────────────────────────────
+
+export const confidenceItems: Item[] = items("confidence", [
+  "The child says things such as “I can't write” or “I'm bad at writing.”",
+  "The child avoids or resists writing activities.",
+  "The child becomes anxious, upset or frustrated when asked to write.",
+  "The child gives up quickly or requires frequent reassurance.",
+  "The child participates more successfully when the amount, time pressure or copying demand is reduced.",
+]);
+
+export const confidenceNote =
+  "Emotional distress is often a consequence of handwriting being persistently difficult, rather than the original cause. This is a short section alongside the eight foundations — not a ninth foundation.";
+
+// ── Teacher recommendation ───────────────────────────────────────
+
+export const recommendationOptions = [
+  "Continue ordinary classroom teaching and monitor",
+  "Provide simple classroom strategies for the flagged areas",
+  "Begin targeted support",
+  "Discuss with parents / caregivers",
+  "Consult an Occupational Therapist or relevant professional",
+];
+
+export const closingNote =
+  "A foundation difficulty should guide the support provided — but it should not delay explicit letter teaching and actual handwriting practice. This is a teacher screening tool, not a standardised assessment, so it does not produce a diagnostic total score.";
+
+// ── Item id helpers ──────────────────────────────────────────────
+
+export const noticeItemIds = noticeItems.map((i) => i.id);
+export const foundationItemIds = foundations.flatMap((f) =>
+  f.items.map((i) => i.id),
+);
+export const confidenceItemIds = confidenceItems.map((i) => i.id);
+
+/** Everything rated on the frequency scale, in the order it appears. */
+export const allItemIds = [
+  ...noticeItemIds,
+  ...foundationItemIds,
+  ...confidenceItemIds,
+];
+
+// ── Scoring ──────────────────────────────────────────────────────
+
+/** A completed screening is a map of item id → rating. */
+export type Responses = Record<string, Rating>;
+
+/**
+ * How a foundation came out. `status` drives the summary table; `flagged`
+ * (support OR monitor) is what the program builder draws on, worst first.
+ */
+export type FoundationStatus = "support" | "monitor" | "clear";
+
+export type FoundationScore = {
+  id: string;
+  number: number;
+  title: string;
+  often: number;
+  sometimes: number;
+  rarely: number;
+  unsure: number;
+  /** Total concern weight (sometimes = 1, often = 2) — used for ordering. */
+  concern: number;
+  status: FoundationStatus;
+  flagged: boolean;
+};
+
+export const statusLabel: Record<FoundationStatus, string> = {
+  support: "Needs support",
+  monitor: "Monitor",
+  clear: "—",
+};
+
+/**
+ * The rule for a foundation's status. Two "often"s, or one "often" backed by
+ * repeated "sometimes", is a pattern worth acting on; a single "often" or
+ * repeated "sometimes" on its own is worth watching. Tunable in one place.
+ */
+function statusFor(often: number, sometimes: number): FoundationStatus {
+  if (often >= 2 || (often >= 1 && sometimes >= 2)) return "support";
+  if (often >= 1 || sometimes >= 2) return "monitor";
+  return "clear";
+}
+
+/** How Part 1 came out — the gate for whether the foundations matter. */
+export type NoticeScore = {
+  often: number;
+  sometimes: number;
+  rarely: number;
+  unsure: number;
+  concern: number;
+  /** True when handwriting does appear to be affecting participation. */
+  affectingParticipation: boolean;
+};
+
+export type ConfidenceScore = {
+  often: number;
+  sometimes: number;
+  concern: number;
+  /** True when the child's feelings about writing warrant a mention. */
+  raised: boolean;
+};
+
+export type ScreeningResult = {
+  notice: NoticeScore;
+  foundations: FoundationScore[];
+  /** Every flagged foundation, worst first — these become the program's focus. */
+  flaggedFoundations: FoundationScore[];
+  confidence: ConfidenceScore;
+  /** True when nothing at all was flagged beneath the surface. */
+  onTrack: boolean;
+};
+
+function tally(ids: string[], responses: Responses) {
+  let often = 0,
+    sometimes = 0,
+    rarely = 0,
+    unsure = 0,
+    concern = 0;
+  for (const id of ids) {
+    const rating = responses[id];
+    if (!rating) continue;
+    if (rating === "often") often++;
+    else if (rating === "sometimes") sometimes++;
+    else if (rating === "rarely") rarely++;
+    else unsure++;
+    concern += concernOf[rating] ?? 0;
+  }
+  return { often, sometimes, rarely, unsure, concern };
+}
+
+/**
+ * Turn raw responses into per-part scores and the list of foundations that
+ * need support. Flagged foundations are ordered worst-first (most "often",
+ * then most "sometimes"). No year-level adjustment yet — treated as Year 1.
+ */
+export function scoreScreening(responses: Responses): ScreeningResult {
+  const n = tally(noticeItemIds, responses);
+  const notice: NoticeScore = {
+    ...n,
+    // The same threshold as a foundation: one clear "often", or a repeated
+    // "sometimes" pattern, means handwriting is affecting participation.
+    affectingParticipation: n.often >= 1 || n.sometimes >= 2,
+  };
+
+  const scored: FoundationScore[] = foundations.map((f) => {
+    const t = tally(
+      f.items.map((i) => i.id),
+      responses,
+    );
+    const status = statusFor(t.often, t.sometimes);
+    return {
+      id: f.id,
+      number: f.number,
+      title: f.title,
+      ...t,
+      status,
+      flagged: status !== "clear",
+    };
+  });
+
+  const flaggedFoundations = scored
+    .filter((f) => f.flagged)
+    .sort(
+      (a, b) =>
+        b.often - a.often || b.sometimes - a.sometimes || b.concern - a.concern,
+    );
+
+  const c = tally(confidenceItemIds, responses);
+  const confidence: ConfidenceScore = {
+    often: c.often,
+    sometimes: c.sometimes,
+    concern: c.concern,
+    raised: c.often >= 1 || c.sometimes >= 2,
+  };
+
   return {
-    id,
-    title,
-    skills: skills.map((label, i) => ({ id: `${id}-${i + 1}`, label })),
+    notice,
+    foundations: scored,
+    flaggedFoundations,
+    confidence,
+    onTrack: flaggedFoundations.length === 0,
   };
 }
 
-/** The 10 domains, in the order teachers see them. */
-export const screeningDomains: Domain[] = [
-  domain("early-writing", "Early Writing Skills", [
-    "Writes own name",
-    "Forms upper and lower case letters correctly",
-    "Uses left-to-right direction",
-    "Uses appropriate spacing between words",
-    "Produces legible writing",
-    "Colours in the lines",
-  ]),
-  domain("fine-motor", "Fine Motor Skills", [
-    "Uses pencils effectively",
-    "Colours with control",
-    "Uses scissors successfully",
-    "Manipulates small objects",
-    "Opens lunch box effectively",
-  ]),
-  domain("hand-dominance", "Hand Dominance", [
-    "Demonstrates clear hand preference when writing/drawing",
-  ]),
-  domain("hand-strength", "Hand Strength", [
-    "Uses appropriate pressure on pencil for the task",
-    "Does not fatigue easily with writing/drawing",
-  ]),
-  domain("postural-control", "Postural Control", [
-    "Sits upright during writing tasks",
-    "Maintains seated position",
-    "Keeps feet supported",
-    "Appears physically comfortable when writing",
-  ]),
-  domain("midline-crossing", "Midline Crossing", [
-    "Colours across page using one hand",
-    "Draws across page without switching hands",
-    "Participates in cross-body movements",
-  ]),
-  domain("visual-perceptual", "Visual Perceptual Skills", [
-    "Recognises letters accurately",
-    "Distinguishes between similar letters (b/d, p/q)",
-    "Finds place on page easily",
-    "Organises work on the page to the left or right based on instruction",
-  ]),
-  domain("visual-motor", "Visual Motor Integration", [
-    "Copies shapes accurately",
-    "Copies letters accurately",
-    "Copies work from the board",
-    "Demonstrates good eye-hand coordination",
-  ]),
-  domain("classroom-readiness", "Classroom Readiness", [
-    "Participates in table activities",
-    "Attends to teacher-directed tasks",
-    "Follows 2-step instructions",
-    "Persists when tasks become challenging",
-    "Completes classroom activities similar to peers",
-  ]),
-  domain("bilateral-coordination", "Bilateral Coordination", [
-    "Uses helper hand effectively",
-  ]),
-];
-
-/** Every skill id, handy for checking a screening is fully answered. */
-export const allSkillIds = screeningDomains.flatMap((d) =>
-  d.skills.map((s) => s.id),
-);
+// ── Student profile options ──────────────────────────────────────
 
 /** The school years staff can pick when adding a student. */
 export const yearLevels = [
@@ -111,79 +467,19 @@ export const yearLevels = [
   "Year 6",
 ];
 
-// ── Scoring ──────────────────────────────────────────────────────
-// A completed screening is a map of skill id → rating.
-export type Responses = Record<string, Rating>;
-
-/** How many "emerging" (yellow) skills in a domain counts as a repeated
-    pattern worth flagging. Tunable in one place. */
-export const REPEATED_YELLOW = 2;
-
-/** How each domain scored, used for the results page and (later) the program. */
-export type DomainScore = {
-  id: string;
-  title: string;
-  green: number;
-  yellow: number;
-  red: number;
-  /** Total concern weight (yellow = 1, red = 2) — used only for ordering. */
-  concern: number;
-  /** True when this domain needs support: any red, or repeated yellow. */
-  flagged: boolean;
-};
-
-export type ScreeningResult = {
-  domains: DomainScore[];
-  totals: { green: number; yellow: number; red: number };
-  /** Every flagged domain, worst first — these become the program's focus. */
-  flaggedDomains: DomainScore[];
-  /** True when nothing was flagged (skills look age-appropriate throughout). */
-  onTrack: boolean;
-};
-
-const concernOf: Record<Rating, number> = { green: 0, yellow: 1, red: 2 };
+/** The four school terms staff can pick when adding a student. */
+export const terms = ["Term 1", "Term 2", "Term 3", "Term 4"];
 
 /**
- * Turn raw responses into per-domain scores and the list of areas that need
- * support. A domain is flagged when it has any red ("not present") skill, or
- * REPEATED_YELLOW+ "emerging" skills. Flagged domains are ordered worst-first
- * (most reds, then most yellows). No year-level adjustment yet — treated as
- * Year 1.
+ * A sensible default term for the "add a student" form, based on today's
+ * month. Australian school terms run roughly Feb–Apr, Apr–Jun, Jul–Sep,
+ * Oct–Dec. This is only a starting guess — staff can always change it, and
+ * exact term dates shift year to year and state to state.
  */
-export function scoreScreening(responses: Responses): ScreeningResult {
-  const totals = { green: 0, yellow: 0, red: 0 };
-
-  const domains: DomainScore[] = screeningDomains.map((d) => {
-    let green = 0,
-      yellow = 0,
-      red = 0,
-      concern = 0;
-
-    for (const skill of d.skills) {
-      const rating = responses[skill.id];
-      if (!rating) continue;
-      if (rating === "green") green++;
-      else if (rating === "yellow") yellow++;
-      else red++;
-      concern += concernOf[rating];
-    }
-
-    totals.green += green;
-    totals.yellow += yellow;
-    totals.red += red;
-
-    const flagged = red >= 1 || yellow >= REPEATED_YELLOW;
-    return { id: d.id, title: d.title, green, yellow, red, concern, flagged };
-  });
-
-  const flaggedDomains = domains
-    .filter((d) => d.flagged)
-    .sort((a, b) => b.red - a.red || b.yellow - a.yellow || b.concern - a.concern);
-
-  return {
-    domains,
-    totals,
-    flaggedDomains,
-    onTrack: flaggedDomains.length === 0,
-  };
+export function currentTerm(today: Date = new Date()): string {
+  const month = today.getMonth(); // 0 = January
+  if (month <= 2) return "Term 1"; // Jan–Mar
+  if (month <= 5) return "Term 2"; // Apr–Jun
+  if (month <= 8) return "Term 3"; // Jul–Sep
+  return "Term 4"; // Oct–Dec
 }
