@@ -9,7 +9,7 @@ export default function Home() {
       <section className="flex items-center justify-between gap-8">
         <div className="max-w-2xl">
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-msot-navy sm:text-5xl">
-            Helping every child build confident handwriting.
+            Helping every child write with confidence.
           </h1>
           <p className="mt-5 text-lg leading-8 text-foreground/70">
             Evidence-based guidance on why handwriting matters, a screening
@@ -53,11 +53,6 @@ export default function Home() {
           cta="Log in to start"
         />
       </section>
-
-      {/* Scroll cue into the education section */}
-      <p className="mt-14 text-center text-sm text-foreground/50">
-        Scroll to learn why handwriting matters ↓
-      </p>
 
       {/* Education: the iceberg model */}
       <IcebergModel />

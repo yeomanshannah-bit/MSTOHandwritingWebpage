@@ -1,18 +1,42 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { scoreScreening, type Responses } from "@/lib/screening";
-import { buildProgram, sessionCounts, MAX_DOMAINS } from "@/lib/programBuilder";
 import {
-  essentialRule,
+  scoreScreening,
+  suggestLetters,
+  type Responses,
+  type Shapes,
+} from "@/lib/screening";
+import { buildProgram } from "@/lib/programBuilder";
+import {
+  philosophy,
   howToUse,
   sessionShape,
   progressMonitoring,
-  safetyPrinciples,
   endOfProgramReflection,
+  CONTENT_VERSION,
 } from "@/lib/programContent";
 import ProgramTimeline from "@/components/ProgramTimeline";
-import { createProgram, completeWeek, reopenWeek } from "./actions";
+import { completeWeek, reopenWeek } from "./actions";
+
+/** Small timer, shown beside each step's duration. */
+function TimerIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="12" cy="13.5" r="7.5" />
+      <path d="M12 10v3.5l2 1.5" />
+      <path d="M9.5 2.5h5" />
+    </svg>
+  );
+}
 
 /*
   A student's 10-week program.
@@ -86,9 +110,26 @@ export default async function StudentProgramPage({
     const domainIds = flagged.map((f) => f.id);
     const preview = buildProgram(domainIds);
 
-    async function build() {
-      "use server";
-      await createProgram(id, screening?.id ?? null, domainIds);
+    /*
+      There is no confirm-then-build step. Arriving here having screened and
+      taken a baseline, a teacher has already said yes twice — a third button
+      restating what they just chose only delayed the program. The reasoning
+      that used to live on that screen now opens the program itself.
+
+      Written inline rather than through createProgram(): server actions call
+      revalidatePath, which cannot run while a page is rendering.
+    */
+    if (screening && preview.domains.length > 0) {
+      const { error: createError } = await supabase.from("programs").insert({
+        student_id: id,
+        staff_id: user.id,
+        screening_id: screening.id,
+        domain_ids: domainIds,
+        content_version: CONTENT_VERSION,
+      });
+      // On failure fall through to the states below rather than redirecting
+      // into a loop that would try, and fail, all over again.
+      if (!createError) redirect(`/students/${id}/program`);
     }
 
     return (
@@ -121,48 +162,12 @@ export default async function StudentProgramPage({
             </p>
           </div>
         ) : (
-          <div className="mt-6 rounded-2xl border border-black/[.08] p-6">
+          // Only reached if the insert above failed.
+          <div className="mt-6 rounded-2xl border border-msot-red/30 bg-msot-red/[.06] p-6">
             <p className="leading-7 text-foreground/75">
-              Their screening flagged {flagged.length} area
-              {flagged.length === 1 ? "" : "s"}. The program will focus on the{" "}
-              {preview.domains.length === 1
-                ? "one that needs it most"
-                : `top ${preview.domains.length}`}
-              , with the most-affected coming round most often.
+              The program couldn&apos;t be created just now. Refresh the page to
+              try again.
             </p>
-            <ul className="mt-4 space-y-2">
-              {sessionCounts(preview).map(({ domain, count }, i) => (
-                <li
-                  key={domain.id}
-                  className="flex items-center gap-3 rounded-xl bg-msot-blue/[.05] px-3 py-2.5"
-                >
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-msot-blue text-xs font-bold text-white">
-                    {i + 1}
-                  </span>
-                  <span className="min-w-0 flex-1 text-sm font-medium text-msot-navy">
-                    {domain.title}
-                  </span>
-                  <span className="shrink-0 text-xs text-foreground/50">
-                    {count} {count === 1 ? "session" : "sessions"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {preview.deferred.length > 0 && (
-              <p className="mt-3 text-sm text-foreground/55">
-                Also flagged, held back so the child isn&apos;t working on too
-                much at once (max {MAX_DOMAINS}):{" "}
-                {preview.deferred.map((d) => d.title).join(", ")}.
-              </p>
-            )}
-            <form action={build}>
-              <button
-                type="submit"
-                className="mt-5 w-full rounded-full bg-msot-teal py-3 font-semibold text-white transition-colors hover:brightness-95"
-              >
-                Build the 10-week program →
-              </button>
-            </form>
           </div>
         )}
       </div>
@@ -180,6 +185,21 @@ export default async function StudentProgramPage({
   const observations = Object.fromEntries(
     (sessions ?? []).map((s) => [s.week as number, s.observation as string | null]),
   );
+
+  /*
+    Which letters to teach first, carried over from the screening's
+    pre-writing shape check. It belongs here rather than on the results page:
+    it isn't a finding about the child, it's the first teaching decision of
+    the program, so it opens the ten weeks.
+  */
+  const { data: sourceScreening } = program.screening_id
+    ? await supabase
+        .from("screenings")
+        .select("shapes")
+        .eq("id", program.screening_id)
+        .maybeSingle()
+    : { data: null };
+  const suggestion = suggestLetters((sourceScreening?.shapes ?? {}) as Shapes);
 
   const built = buildProgram(program.domain_ids as string[]);
   const timelineWeeks = built.weeks.map((w) => ({
@@ -214,50 +234,46 @@ export default async function StudentProgramPage({
         })}
       </p>
 
-      {/* Focus areas */}
-      <ul className="mt-6 grid gap-2 sm:grid-cols-2">
-        {sessionCounts(built).map(({ domain, count }, i) => (
-          <li
-            key={domain.id}
-            className="flex items-center gap-3 rounded-xl bg-msot-blue/[.05] px-3 py-2.5"
-          >
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-msot-blue text-xs font-bold text-white">
-              {i + 1}
-            </span>
-            <span className="min-w-0 flex-1 text-sm font-medium text-msot-navy">
-              {domain.title}
-            </span>
-            <span className="shrink-0 text-xs text-foreground/50">{count}</span>
-          </li>
-        ))}
-      </ul>
 
-      {/* How a session runs */}
+      {/* Before you start — how a session runs, and why the order is what it is */}
       <div className="mt-8 rounded-2xl border border-black/[.08] px-5 py-5">
-        <h2 className="font-semibold text-msot-navy">Every session</h2>
+        <h2 className="font-semibold text-msot-navy">Before you start</h2>
         <p className="mt-1.5 text-sm leading-6 text-foreground/65">{howToUse}</p>
-        <p className="mt-3 rounded-xl bg-msot-cyan/10 px-3 py-2.5 text-center text-sm font-semibold text-msot-navy">
+
+        <p className="mt-5 text-sm font-semibold text-msot-navy">
           {sessionShape.headline}
         </p>
-        <ol className="mt-3 space-y-1.5">
+        <ol className="mt-3 space-y-2.5">
           {sessionShape.steps.map((step, i) => (
             <li
-              key={i}
-              className="flex gap-2.5 text-sm leading-6 text-foreground/75"
+              key={step.title}
+              className="rounded-xl bg-msot-blue/[.04] px-4 py-3"
             >
-              <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-msot-blue/10 text-[10px] font-bold text-msot-blue">
-                {i + 1}
-              </span>
-              {step}
+              <div className="flex items-center gap-2.5">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-msot-blue text-xs font-bold text-white">
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1 text-sm font-semibold text-msot-navy">
+                  {step.title}
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-foreground/60">
+                  <TimerIcon className="h-4 w-4 text-msot-blue" />
+                  {step.timing}
+                </span>
+              </div>
+              <p className="mt-1.5 text-sm leading-6 text-foreground/70">
+                {step.detail}
+              </p>
             </li>
           ))}
         </ol>
-        <div className="mt-4 rounded-xl border-l-4 border-msot-red bg-msot-red/[.06] px-4 py-3">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-msot-red">
-            The essential rule
+
+        <div className="mt-5 rounded-xl border-l-4 border-msot-teal bg-msot-teal/[.07] px-4 py-3">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-msot-teal">
+            {philosophy.title}
           </p>
           <p className="mt-1 text-sm leading-6 text-foreground/80">
-            {essentialRule}
+            {philosophy.body}
           </p>
         </div>
       </div>
@@ -270,13 +286,37 @@ export default async function StudentProgramPage({
           observations={observations}
           onComplete={onComplete}
           onReopen={onReopen}
+          draftKey={program.id}
+          weekOneIntro={
+            suggestion.ready && suggestion.groups.length > 0 ? (
+              <div className="mb-5 rounded-xl border border-msot-orange/25 bg-msot-orange/[.06] p-4">
+                <p className="font-semibold text-msot-navy">
+                  Letters to introduce first
+                </p>
+                <p className="mt-1 text-sm leading-6 text-foreground/70">
+                  Built from the pre-writing shapes {student.initials} can
+                  already make — start here rather than at &ldquo;A&rdquo;.
+                </p>
+                <ul className="mt-3 space-y-3">
+                  {suggestion.groups.map((g) => (
+                    <li key={g.letters}>
+                      <p className="font-mono text-lg tracking-wider text-msot-navy">
+                        {g.letters}
+                      </p>
+                      <p className="text-xs text-foreground/60">{g.because}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null
+          }
         />
       </div>
 
       {/* Monitoring + safety */}
       <details className="mt-8 rounded-2xl border border-black/[.08] px-5 py-4">
         <summary className="cursor-pointer font-semibold text-msot-navy">
-          What to record, and staying safe
+          Prompts for your observation notes
         </summary>
         <div className="mt-4 space-y-3">
           {progressMonitoring.map((row) => (
@@ -293,17 +333,6 @@ export default async function StudentProgramPage({
             </div>
           ))}
         </div>
-        <ul className="mt-4 space-y-2">
-          {safetyPrinciples.map((p, i) => (
-            <li
-              key={i}
-              className="flex gap-2.5 text-sm leading-6 text-foreground/75"
-            >
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-msot-red" />
-              {p}
-            </li>
-          ))}
-        </ul>
       </details>
 
       <div className="mt-6 rounded-2xl bg-msot-cyan/10 px-5 py-5">

@@ -61,7 +61,7 @@ export default function LoginPage() {
         className="h-20 w-auto"
       />
       <h1 className="mt-6 text-2xl font-bold text-msot-navy">
-        {mode === "signin" ? "Staff log in" : "Create a staff account"}
+        {mode === "signin" ? "Log In" : "Create an Account"}
       </h1>
       <p className="mt-2 text-center text-foreground/70">
         {mode === "signin"
@@ -123,18 +123,46 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <button
-        onClick={() => {
-          setMode(mode === "signin" ? "signup" : "signin");
-          setError(null);
-          setNotice(null);
-        }}
-        className="mt-6 text-sm text-foreground/70 hover:text-msot-blue"
-      >
-        {mode === "signin"
-          ? "New here? Create an account"
-          : "Already have an account? Log in"}
-      </button>
+      {/*
+        Secondary action, styled as the outlined twin of the submit button:
+        same width, same pill, same vertical padding. The outline is a
+        `ring-inset` rather than a border so it adds no height — a 2px border
+        would make this button 4px taller than the filled one above it.
+
+        type="button" matters: it sits outside the form, but keeping it
+        explicit stops it ever being treated as a submit.
+      */}
+      {/*
+        The two modes get different secondary actions. Signing in offers the
+        outlined twin of the submit button, because creating an account is a
+        real destination. Signing up only needs a way back, so it gets a quiet
+        text link — anything heavier would compete with "Create account".
+      */}
+      {mode === "signin" ? (
+        <button
+          type="button"
+          onClick={() => {
+            setMode("signup");
+            setError(null);
+            setNotice(null);
+          }}
+          className="mt-3 w-full rounded-full bg-white py-3 font-medium text-msot-blue ring-2 ring-inset ring-msot-blue transition-colors hover:bg-msot-blue/[.06]"
+        >
+          Create an account
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setMode("signin");
+            setError(null);
+            setNotice(null);
+          }}
+          className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-foreground/70 transition-colors hover:text-msot-blue"
+        >
+          <span aria-hidden>←</span> Go back to log in
+        </button>
+      )}
     </div>
   );
 }

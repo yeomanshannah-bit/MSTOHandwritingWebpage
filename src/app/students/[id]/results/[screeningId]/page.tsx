@@ -1,16 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import ShapeGlyph from "@/components/ShapeGlyph";
+import PaperPencilMark from "@/components/PaperPencilMark";
 import {
   scoreScreening,
-  suggestLetters,
-  preWritingShapes,
-  shapeOptions,
   statusLabel,
   closingNote,
   type Responses,
-  type Shapes,
   type FoundationStatus,
 } from "@/lib/screening";
 
@@ -52,7 +48,7 @@ export default async function ResultsPage({
 
   const { data: screening } = await supabase
     .from("screenings")
-    .select("responses, shapes, reflection, created_at")
+    .select("responses, reflection, created_at")
     .eq("id", screeningId)
     .single();
 
@@ -63,12 +59,7 @@ export default async function ResultsPage({
   const { notice, foundations, flaggedFoundations, confidence, onTrack } =
     result;
 
-  const shapes = (screening.shapes ?? {}) as Shapes;
-  const suggestion = suggestLetters(shapes);
   const reflection = (screening.reflection ?? {}) as Reflection;
-  const ratedShapes = preWritingShapes.filter(
-    (s) => shapes[s.id] && shapes[s.id] !== "not-assessed",
-  );
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
@@ -205,58 +196,8 @@ export default async function ResultsPage({
         </p>
       )}
 
-      {/* ── Pre-writing shapes ───────────────────────────────────── */}
-      <h2 className="mt-10 text-xl font-semibold text-msot-navy">
-        Pre-writing shapes
-      </h2>
-      {ratedShapes.length > 0 ? (
-        <>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {ratedShapes.map((s) => (
-              <span
-                key={s.id}
-                className="flex items-center gap-2 rounded-xl border border-black/[.08] bg-white/70 px-3 py-2"
-              >
-                <ShapeGlyph
-                  shape={s.id}
-                  className="h-6 w-6 shrink-0 text-msot-navy"
-                />
-                <span className="text-sm text-foreground/80">
-                  {s.label}
-                  <span className="text-foreground/50">
-                    {" — "}
-                    {shapeOptions
-                      .find((o) => o.value === shapes[s.id])
-                      ?.label.toLowerCase()}
-                  </span>
-                </span>
-              </span>
-            ))}
-          </div>
-
-          {suggestion.ready && suggestion.groups.length > 0 && (
-            <div className="mt-4 rounded-2xl border border-msot-orange/25 bg-msot-orange/[.05] p-5">
-              <p className="font-semibold text-msot-navy">
-                Letters to introduce first
-              </p>
-              <ul className="mt-2 space-y-2">
-                {suggestion.groups.map((g) => (
-                  <li key={g.letters}>
-                    <p className="font-mono text-base tracking-wider text-msot-navy">
-                      {g.letters}
-                    </p>
-                    <p className="text-xs text-foreground/60">{g.because}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </>
-      ) : (
-        <p className="mt-3 text-foreground/60">
-          The shape check wasn&apos;t completed for this screening.
-        </p>
-      )}
+      {/* "Letters to introduce first" is not shown here. It is a teaching
+          decision, not a screening finding — it now opens the program. */}
 
       {/* ── Part 3 · confidence ──────────────────────────────────── */}
       <h2 className="mt-10 text-xl font-semibold text-msot-navy">
@@ -279,8 +220,11 @@ export default async function ResultsPage({
         reflection.comments) && (
         <>
           <h2 className="mt-10 text-xl font-semibold text-msot-navy">
-            Teacher recommendation
+            Teacher notes
           </h2>
+          {/* The recommendation checklist was retired from the screener, but
+              older screenings may still carry one — so it's rendered if present
+              rather than dropped. */}
           {reflection.recommendations?.length ? (
             <ul className="mt-3 space-y-2">
               {reflection.recommendations.map((r) => (
@@ -316,24 +260,39 @@ export default async function ResultsPage({
         </>
       )}
 
-      <p className="mt-8 rounded-xl bg-black/[.03] p-4 text-sm leading-6 text-foreground/70">
-        {closingNote}
-      </p>
+      {/*
+        The turn from findings to action, in the platform's standard green
+        panel — the same treatment as "Concerned about a particular student?"
+        on the article, so an offer to take the next step always looks the
+        same wherever it appears.
 
-      {/* Next step → baseline photo, then program */}
-      <div className="mt-10 rounded-2xl bg-msot-teal/[.08] p-6">
-        <h2 className="text-lg font-semibold text-msot-navy">Next step</h2>
-        <p className="mt-2 text-foreground/70">
-          Upload a baseline photo of {student.initials} writing the alphabet, so
-          you can track progress across the 10-week program.
+        The baseline photo is not mentioned here; it is explained on the page
+        the button leads to.
+
+        `relative` so the mark can sit in the bottom-right corner.
+      */}
+      <div className="relative mt-12 rounded-2xl border border-msot-teal/25 bg-msot-teal/[.06] p-7">
+        <h2 className="text-2xl font-bold leading-snug text-msot-navy">
+          Let&apos;s build {student.initials} a program
+        </h2>
+        <p className="mt-2 max-w-lg leading-7 text-foreground/70">
+          A self-paced 10-week program with strategies specific to your
+          student&apos;s needs.
         </p>
         <Link
           href={`/students/${id}/baseline`}
-          className="mt-4 inline-flex rounded-full bg-msot-teal px-5 py-2.5 font-medium text-white transition-colors hover:brightness-95"
+          className="mt-6 inline-flex rounded-full bg-msot-teal px-6 py-3 font-medium text-white transition-colors hover:brightness-95"
         >
-          Continue to baseline photo →
+          Build a program →
         </Link>
+
+        <PaperPencilMark className="pointer-events-none absolute bottom-6 right-6 h-14 w-14" />
       </div>
+
+      {/* Plain closing note — a caveat, not a callout. No panel, no tint. */}
+      <p className="mt-14 max-w-2xl text-sm leading-6 text-foreground/60">
+        {closingNote}
+      </p>
     </div>
   );
 }

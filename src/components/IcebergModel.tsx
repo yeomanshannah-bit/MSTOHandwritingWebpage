@@ -64,16 +64,13 @@ export default function IcebergModel() {
   return (
     <section className="mt-24">
       <div className="mx-auto max-w-2xl text-center">
-        <p className="text-sm font-semibold text-msot-blue">
-          Why handwriting matters
-        </p>
-        <h2 className="mt-2 text-3xl font-bold tracking-tight text-msot-navy">
-          The Making Sense of Handwriting Iceberg
+        <h2 className="text-3xl font-bold tracking-tight text-msot-navy">
+          Handwriting is the Tip of the Iceberg
         </h2>
         <p className="mt-3 text-lg leading-8 text-foreground/70">
-          Looking beneath the surface of handwriting difficulties. What you see
-          on the page is just the tip — beneath it sit eight foundations that
-          make writing possible. Tap any foundation to learn more.
+          On the surface we see poor handwriting. Beneath the surface are eight
+          foundations that impact a child&apos;s handwriting. Tap any foundation
+          to learn more.
         </p>
       </div>
 
@@ -148,7 +145,7 @@ export default function IcebergModel() {
 
         {/* WHAT WE SEE — heading sits high in the sky; the list is anchored
             just above the waterline, over the tip of the iceberg (slide 1) */}
-        <div className="absolute inset-x-0 top-[5%] px-4 text-center">
+        <div className="absolute inset-x-0 top-[11%] px-4 text-center">
           <p className="text-lg font-extrabold uppercase tracking-[0.2em] text-msot-navy/80 sm:text-xl">
             What we see
           </p>

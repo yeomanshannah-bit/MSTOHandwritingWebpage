@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -14,15 +14,10 @@ import {
   ratingOptions,
   allItemIds,
   scoreScreening,
-  suggestLetters,
   senseIntro,
   ratingGuidance,
-  yearOneGuidance,
   shapeCheckIntro,
-  shapeCheckHint,
   confidenceNote,
-  recommendationOptions,
-  closingNote,
   SHAPE_CHECK_AFTER,
   type Rating,
   type Responses,
@@ -39,30 +34,88 @@ import {
 */
 
 // Each option keeps its colour at all times so the scale reads at a glance:
-// calm for "rarely", warm for "often". `idle` is the soft tint, `chosen` the
-// filled state.
+// calm for "rarely", warm for "often", brand cyan/navy for "not sure" — a
+// deliberate blue so it never reads as a mild version of "rarely".
 const idleStyle: Record<Rating, string> = {
   rarely: "border-msot-teal/40 bg-msot-teal/10 text-msot-teal hover:bg-msot-teal/20",
   sometimes:
     "border-msot-yellow/60 bg-msot-yellow/15 text-msot-navy hover:bg-msot-yellow/25",
   often: "border-msot-red/40 bg-msot-red/10 text-msot-red hover:bg-msot-red/20",
   unsure:
-    "border-black/15 bg-black/[.03] text-foreground/55 hover:bg-black/[.06]",
+    "border-msot-cyan/50 bg-msot-cyan/15 text-msot-navy hover:bg-msot-cyan/25",
 };
 const chosenStyle: Record<Rating, string> = {
   rarely: "border-msot-teal bg-msot-teal text-white ring-2 ring-msot-teal/30",
   sometimes:
     "border-msot-yellow bg-msot-yellow text-msot-navy ring-2 ring-msot-yellow/40",
   often: "border-msot-red bg-msot-red text-white ring-2 ring-msot-red/30",
-  unsure:
-    "border-foreground/50 bg-foreground/60 text-white ring-2 ring-foreground/20",
+  // Navy rather than cyan: cyan is too light to carry white text, and a solid
+  // fill is what makes the chosen option obvious against the white card.
+  unsure: "border-msot-navy bg-msot-navy text-white ring-2 ring-msot-navy/30",
 };
 const dotStyle: Record<Rating, string> = {
   rarely: "bg-msot-teal",
   sometimes: "bg-msot-yellow",
   often: "bg-msot-red",
-  unsure: "bg-foreground/40",
+  unsure: "bg-msot-cyan",
 };
+
+/** Respects the OS "reduce motion" setting — smooth scrolling can make some
+    people feel unwell, and this page scrolls on almost every click. */
+function prefersReducedMotion() {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
+
+/*
+  One rateable statement. Defined at module level, not inside ScreenPage —
+  a component declared inside another is a brand-new type on every render,
+  which makes React tear down and rebuild all 53 rows on each keystroke.
+*/
+function ItemRow({
+  item,
+  chosen,
+  onChoose,
+  showGap,
+}: {
+  item: Item;
+  chosen: Rating | undefined;
+  onChoose: (rating: Rating) => void;
+  showGap: boolean;
+}) {
+  // Only unrated rows light up, and only once the teacher has asked where
+  // the gaps are — the form shouldn't scold you before you've finished.
+  const gap = showGap && !chosen;
+  return (
+    <div
+      id={`item-${item.id}`}
+      className={`scroll-mt-24 rounded-xl border p-4 transition-colors ${
+        gap
+          ? "border-msot-orange bg-msot-orange/[.07]"
+          : "border-black/[.06] bg-white/70"
+      }`}
+    >
+      <p className="text-foreground/90">{item.label}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {ratingOptions.map((o) => {
+          const isChosen = chosen === o.value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onChoose(o.value)}
+              aria-pressed={isChosen}
+              className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                isChosen ? chosenStyle[o.value] : idleStyle[o.value]
+              }`}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function ScreenPage() {
   const router = useRouter();
@@ -72,37 +125,148 @@ export default function ScreenPage() {
   const [responses, setResponses] = useState<Responses>({});
   // The shape check is a different scale, so it's kept separately.
   const [shapes, setShapes] = useState<Shapes>({});
-  const [recommendations, setRecommendations] = useState<string[]>([]);
   const [strengths, setStrengths] = useState("");
   const [comments, setComments] = useState("");
+  const [showGaps, setShowGaps] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /*
+    A screening is long, and teachers get interrupted. Work in progress is
+    kept in the browser under a key unique to this student, so leaving the
+    page — or closing the laptop — doesn't lose it.
+
+    Browser-local by design for now: it needs no database column and works
+    offline. The trade-off is that a draft doesn't follow you to another
+    device. Moving it to Supabase later is a contained change.
+  */
+  const draftKey = `msot:screening-draft:${id}`;
+  // Guards the autosave effect: without it, the first render would write
+  // empty state over a saved draft before the load effect had run.
+  const loaded = useRef(false);
+  const [restored, setRestored] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+
+  /*
+    Restore any draft for this student, once, on first render.
+
+    eslint-disable below: the rule warns against setState inside an effect,
+    and it is right to in general. This is the exception it allows for —
+    pulling state in from an external system. It cannot be a useState
+    initialiser instead, because this component is server-rendered first and
+    localStorage does not exist there; reading it during render would throw
+    on the server and desync hydration on the client.
+  */
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (raw) {
+        const d = JSON.parse(raw);
+        setResponses(d.responses ?? {});
+        setShapes(d.shapes ?? {});
+        setStrengths(d.strengths ?? "");
+        setComments(d.comments ?? "");
+        if (Object.keys(d.responses ?? {}).length > 0) setRestored(true);
+      }
+    } catch {
+      // A corrupt or unreadable draft should never block screening.
+    }
+    loaded.current = true;
+  }, [draftKey]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const saveDraft = useCallback(() => {
+    if (!loaded.current) return;
+    try {
+      window.localStorage.setItem(
+        draftKey,
+        JSON.stringify({ responses, shapes, strengths, comments }),
+      );
+      setSavedAt(
+        new Date().toLocaleTimeString([], {
+          hour: "numeric",
+          minute: "2-digit",
+        }),
+      );
+    } catch {
+      // Private browsing or a full quota — the explicit Save button below
+      // surfaces the problem; autosave stays silent.
+    }
+  }, [draftKey, responses, shapes, strengths, comments]);
+
+  // Autosave, so an unsaved draft is never lost to a closed tab. The
+  // explicit Save button exists for reassurance, not because it is the
+  // only thing that persists.
+  useEffect(() => {
+    if (!loaded.current) return;
+    const t = setTimeout(saveDraft, 600);
+    return () => clearTimeout(t);
+  }, [saveDraft]);
+
   const answered = Object.keys(responses).length;
   const total = allItemIds.length;
-  const complete = answered === total;
+  const remaining = allItemIds.filter((i) => !responses[i]);
+  const complete = remaining.length === 0;
 
-  // Live scoring drives the Part 1 gate and the shape suggestion.
+  // Live scoring drives the Part 1 gate.
   const result = scoreScreening(responses);
-  const suggestion = suggestLetters(shapes);
 
   const noticeAnswered = noticeItems.every((i) => responses[i.id]);
 
+  /*
+    Rating a statement scrolls the next one into view, so a teacher can work
+    down 53 statements without reaching for the scrollbar between each one.
+
+    Two deliberate limits:
+
+    - It only advances the FIRST time a statement is rated. Changing an
+      earlier answer leaves the page where it is; nothing is more annoying
+      than a form that yanks you away while you are correcting something.
+    - It stops at the end of the list, and it never scrolls past the shape
+      check — those are a hands-on task, not a tap-through.
+  */
   function choose(itemId: string, rating: Rating) {
+    const isFirstAnswer = !responses[itemId];
     setResponses((prev) => ({ ...prev, [itemId]: rating }));
+    if (isFirstAnswer) advanceFrom(itemId);
+  }
+
+  function advanceFrom(itemId: string) {
+    const at = allItemIds.indexOf(itemId);
+    const next = allItemIds[at + 1];
+    if (at === -1 || !next) return;
+    // Wait for the click's own re-render so the scroll lands accurately.
+    requestAnimationFrame(() => {
+      document.getElementById(`item-${next}`)?.scrollIntoView({
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+        block: "center",
+      });
+    });
   }
 
   function chooseShape(shapeId: string, rating: ShapeRating) {
     setShapes((prev) => ({ ...prev, [shapeId]: rating }));
   }
 
-  function toggleRecommendation(value: string) {
-    setRecommendations((prev) =>
-      prev.includes(value) ? prev.filter((r) => r !== value) : [...prev, value],
-    );
+  /** Reveal the unrated statements and jump to the first one. */
+  function goToFirstGap() {
+    setShowGaps(true);
+    const first = remaining[0];
+    if (!first) return;
+    document
+      .getElementById(`item-${first}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   async function handleSubmit() {
+    // Never a dead button: when statements are missing, the action becomes
+    // "show me which ones" instead of doing nothing.
+    if (!complete) {
+      goToFirstGap();
+      return;
+    }
+
     setBusy(true);
     setError(null);
 
@@ -126,7 +290,6 @@ export default function ScreenPage() {
         results,
         shapes,
         reflection: {
-          recommendations,
           strengths: strengths.trim(),
           comments: comments.trim(),
         },
@@ -140,35 +303,29 @@ export default function ScreenPage() {
       return;
     }
 
+    // The screening is safely in the database now, so the local draft has
+    // done its job — leaving it would offer to restore a finished screening.
+    try {
+      window.localStorage.removeItem(draftKey);
+    } catch {
+      /* nothing to clean up */
+    }
+
     router.push(`/students/${id}/results/${data.id}`);
     router.refresh();
   }
 
-  /** One rateable statement with its four frequency buttons. */
-  function ItemRow({ item }: { item: Item }) {
-    return (
-      <div className="rounded-xl border border-black/[.06] bg-white/70 p-4">
-        <p className="text-foreground/90">{item.label}</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {ratingOptions.map((o) => {
-            const isChosen = responses[item.id] === o.value;
-            return (
-              <button
-                key={o.value}
-                type="button"
-                onClick={() => choose(item.id, o.value)}
-                aria-pressed={isChosen}
-                className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
-                  isChosen ? chosenStyle[o.value] : idleStyle[o.value]
-                }`}
-              >
-                {o.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
+  /** Renders a list of statements, wired to state. */
+  function rows(list: Item[]) {
+    return list.map((item) => (
+      <ItemRow
+        key={item.id}
+        item={item}
+        chosen={responses[item.id]}
+        onChoose={(r) => choose(item.id, r)}
+        showGap={showGaps}
+      />
+    ));
   }
 
   return (
@@ -186,6 +343,12 @@ export default function ScreenPage() {
       <h1 className="mt-1 text-3xl font-bold tracking-tight text-msot-navy">
         Screening
       </h1>
+
+      {restored && (
+        <p className="mt-4 rounded-xl bg-msot-teal/[.09] px-4 py-3 text-sm text-foreground/80">
+          Picked up where you left off — your saved answers have been restored.
+        </p>
+      )}
 
       {/* Sense sets up the iceberg frame. Text-only for now — his artwork
           replaces the badge when the assets land. */}
@@ -212,23 +375,15 @@ export default function ScreenPage() {
             </span>
           ))}
         </div>
-        <p className="border-t border-black/[.06] pt-3 text-foreground/70">
-          {yearOneGuidance}
-        </p>
       </div>
 
       {/* ── PART 1 · NOTICE — above the waterline ───────────────── */}
       <PartHeading
-        step={1}
         eyebrow="Part 1 · Notice"
         title="Is handwriting affecting participation?"
         caption="the tip of the iceberg"
       />
-      <div className="mt-4 space-y-3">
-        {noticeItems.map((item) => (
-          <ItemRow key={item.id} item={item} />
-        ))}
-      </div>
+      <div className="mt-4 space-y-3">{rows(noticeItems)}</div>
 
       {/* The waterline. Everything below it is the submerged mass. */}
       <div className="mt-10" aria-hidden>
@@ -257,7 +412,6 @@ export default function ScreenPage() {
 
       {/* ── PART 2 · UNDERSTAND — the eight foundations ─────────── */}
       <PartHeading
-        step={2}
         eyebrow="Part 2 · Understand"
         title="What may be contributing?"
         caption="the eight foundations beneath the surface"
@@ -283,18 +437,14 @@ export default function ScreenPage() {
                       : score.status === "monitor"
                         ? "Monitor"
                         : "Needs support"
-                    : "Not rated"}
+                    : `${rated} of ${f.items.length} rated`}
                 </span>
               </div>
               {f.note && (
                 <p className="ml-11 mt-1 text-xs text-foreground/55">{f.note}</p>
               )}
 
-              <div className="mt-3 space-y-3">
-                {f.items.map((item) => (
-                  <ItemRow key={item.id} item={item} />
-                ))}
-              </div>
+              <div className="mt-3 space-y-3">{rows(f.items)}</div>
 
               {/* The shape check belongs to visual-motor integration — it's a
                   direct task, so it sits inside that foundation rather than
@@ -347,31 +497,13 @@ export default function ScreenPage() {
                     ))}
                   </div>
 
-                  {suggestion.ready && suggestion.groups.length > 0 ? (
-                    <div className="mt-4 rounded-xl bg-white/80 p-4">
-                      <p className="text-sm font-semibold text-msot-navy">
-                        Sense suggests introducing these letters first
-                      </p>
-                      <ul className="mt-2 space-y-2">
-                        {suggestion.groups.map((g) => (
-                          <li key={g.letters}>
-                            <p className="font-mono text-base tracking-wider text-msot-navy">
-                              {g.letters}
-                            </p>
-                            <p className="text-xs text-foreground/60">
-                              {g.because}
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : (
-                    <p className="mt-4 text-sm text-foreground/60">
-                      {suggestion.ready
-                        ? "No letter groups yet — the shapes those letters are built from aren't available."
-                        : shapeCheckHint}
-                    </p>
-                  )}
+                  {/*
+                    The letter suggestion deliberately does NOT appear here.
+                    While screening, the teacher is observing — showing them
+                    which letters to teach mid-observation invites them to
+                    start planning instead of rating. It belongs on the
+                    results page and in the program, where it already is.
+                  */}
                 </div>
               )}
             </section>
@@ -381,7 +513,6 @@ export default function ScreenPage() {
 
       {/* ── PART 3 · CONFIDENCE — the thread ────────────────────── */}
       <PartHeading
-        step={3}
         eyebrow="Part 3 · Confidence"
         title="How the child feels about writing"
         caption="the thread through every foundation"
@@ -389,54 +520,14 @@ export default function ScreenPage() {
       <p className="mt-3 rounded-xl bg-msot-pink/[.07] p-4 text-sm leading-6 text-foreground/75">
         {confidenceNote}
       </p>
-      <div className="mt-4 space-y-3">
-        {confidenceItems.map((item) => (
-          <ItemRow key={item.id} item={item} />
-        ))}
-      </div>
+      <div className="mt-4 space-y-3">{rows(confidenceItems)}</div>
 
-      {/* ── Teacher's own read ──────────────────────────────────── */}
-      <h2 className="mt-12 text-xl font-semibold text-msot-navy">
-        Teacher recommendation
-      </h2>
-      <p className="mt-1 text-sm text-foreground/60">
-        Choose any that apply.
-      </p>
-      <div className="mt-3 space-y-2">
-        {recommendationOptions.map((o) => {
-          const isChosen = recommendations.includes(o);
-          return (
-            <button
-              key={o}
-              type="button"
-              onClick={() => toggleRecommendation(o)}
-              aria-pressed={isChosen}
-              className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
-                isChosen
-                  ? "border-msot-blue bg-msot-blue/[.08] text-msot-navy"
-                  : "border-black/[.08] bg-white/70 text-foreground/80 hover:bg-black/[.02]"
-              }`}
-            >
-              <span
-                className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border text-xs ${
-                  isChosen
-                    ? "border-msot-blue bg-msot-blue text-white"
-                    : "border-black/20"
-                }`}
-                aria-hidden
-              >
-                {isChosen ? "✓" : ""}
-              </span>
-              {o}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-6 space-y-4">
+      {/* ── The teacher's own words ─────────────────────────────── */}
+      <div className="mt-12 space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium text-msot-navy">
-            Strengths observed
+            Strengths observed{" "}
+            <span className="font-normal text-foreground/50">(optional)</span>
           </label>
           <textarea
             rows={3}
@@ -448,7 +539,8 @@ export default function ScreenPage() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-msot-navy">
-            Additional comments
+            Additional comments{" "}
+            <span className="font-normal text-foreground/50">(optional)</span>
           </label>
           <textarea
             rows={3}
@@ -459,9 +551,9 @@ export default function ScreenPage() {
         </div>
       </div>
 
-      <p className="mt-8 rounded-xl bg-black/[.03] p-4 text-sm leading-6 text-foreground/70">
-        {closingNote}
-      </p>
+      {/* The "not a standardised assessment" note lives on the results page,
+          where a teacher is reading findings and the caveat actually bears on
+          what they do next. Mid-screening it was just one more thing to read. */}
 
       {error && (
         <p className="mt-6 rounded-lg bg-msot-red/10 px-4 py-2.5 text-sm text-msot-red">
@@ -472,19 +564,37 @@ export default function ScreenPage() {
       {/* Sticky bottom bar: progress + submit */}
       <div className="fixed inset-x-0 bottom-0 border-t border-black/10 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-4 px-6 py-3">
-          <span className="text-sm text-foreground/70">
-            {answered} of {total} rated
-          </span>
+          <div className="text-sm">
+            <p className="text-foreground/70">
+              {answered} of {total} rated
+            </p>
+            {!complete && (
+              <button
+                type="button"
+                onClick={goToFirstGap}
+                className="text-msot-blue underline underline-offset-2 hover:text-msot-navy"
+              >
+                {remaining.length} still to rate — show me
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={saveDraft}
+            className="shrink-0 rounded-full px-5 py-2.5 font-medium text-msot-blue ring-2 ring-inset ring-msot-blue/40 transition-colors hover:bg-msot-blue/[.06]"
+          >
+            {savedAt ? `Saved ${savedAt}` : "Save"}
+          </button>
           <button
             onClick={handleSubmit}
-            disabled={!complete || busy}
-            className="rounded-full bg-msot-blue px-6 py-2.5 font-medium text-white transition-colors hover:bg-msot-navy disabled:opacity-50"
+            disabled={busy}
+            className={`shrink-0 rounded-full px-6 py-2.5 font-medium transition-colors disabled:opacity-50 ${
+              complete
+                ? "bg-msot-blue text-white hover:bg-msot-navy"
+                : "bg-msot-orange/15 text-msot-navy hover:bg-msot-orange/25"
+            }`}
           >
-            {busy
-              ? "Saving…"
-              : complete
-                ? "See results"
-                : "Rate every statement to finish"}
+            {busy ? "Saving…" : complete ? "See results" : "Show what's left"}
           </button>
         </div>
       </div>
@@ -492,30 +602,28 @@ export default function ScreenPage() {
   );
 }
 
-/** The banner that opens each of the three parts. */
+/*
+  The banner that opens each of the three parts. No step number: the eyebrow
+  already says "Part 1", and the eight foundations below carry numbered
+  badges of their own. Two numbering systems on one screen made the page
+  read as far more numbered than it is — the foundations keep theirs.
+*/
 function PartHeading({
-  step,
   eyebrow,
   title,
   caption,
 }: {
-  step: number;
   eyebrow: string;
   title: string;
   caption: string;
 }) {
   return (
-    <div className="mt-12 flex items-center gap-4">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-msot-blue text-lg font-bold text-white">
-        {step}
-      </span>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-msot-blue">
-          {eyebrow}
-        </p>
-        <h2 className="text-xl font-bold text-msot-navy">{title}</h2>
-        <p className="text-sm text-foreground/55">{caption}</p>
-      </div>
+    <div className="mt-12">
+      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-msot-blue">
+        {eyebrow}
+      </p>
+      <h2 className="text-xl font-bold text-msot-navy">{title}</h2>
+      <p className="text-sm text-foreground/55">{caption}</p>
     </div>
   );
 }

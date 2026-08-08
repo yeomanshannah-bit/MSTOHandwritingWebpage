@@ -58,11 +58,11 @@ function items(prefix: string, labels: string[]): Item[] {
 export const senseIntro =
   "Hi, I'm Sense. Handwriting sits at the tip of an iceberg. This tool mirrors the iceberg exactly — first we notice whether handwriting is affecting participation, then we look underneath at the eight foundations, and we keep an eye on how the child feels about writing. Let's make sense of it together.";
 
+// One statement rather than two: the screener already asks a lot of a
+// teacher before they rate anything, so the framing is kept to a single
+// paragraph they can take in at a glance.
 export const ratingGuidance =
-  "Rate each statement on what you have noticed across several classroom activities — not a single difficult writing lesson.";
-
-export const yearOneGuidance =
-  "Rate against typical Year 1 expectations (the second year of school). Occasional letter reversals remain developmentally normal to about age seven — flag the reversal item only if reversals are frequent or persistent.";
+  "Rate each statement on what you have noticed across several classroom activities. Rate against typical Year 1 expectations. Please note letter reversals remain developmentally normal until approximately 7 years of age.";
 
 export const curriculumAnchor = "AC9E1LY08";
 
@@ -168,7 +168,6 @@ export const foundations: Foundation[] = [
       "The child has difficulty connecting letters with their corresponding sounds.",
       "The child cannot readily recall how to form familiar letters without copying a model.",
     ],
-    "Australian Curriculum anchor: AC9E1LY08 — write words using unjoined lower-case and upper-case letters",
   ),
 ];
 
@@ -203,7 +202,9 @@ export const preWritingShapes: PreWritingShape[] = [
   { id: "cross", label: "Cross" },
   { id: "square", label: "Square" },
   { id: "diagonal", label: "Diagonal lines" },
-  { id: "x", label: "X" },
+  // Labelled in words like every other shape — the glyph beside it is
+  // already a large X, so a bare "X" here read as a duplicate.
+  { id: "x", label: "Diagonal cross" },
   { id: "triangle", label: "Triangle" },
   { id: "diamond", label: "Diamond" },
 ];
@@ -283,15 +284,10 @@ export const confidenceItems: Item[] = items("confidence", [
 export const confidenceNote =
   "Emotional distress is often a consequence of handwriting being persistently difficult, rather than the original cause. This is a short section alongside the eight foundations — not a ninth foundation.";
 
-// ── Teacher recommendation ───────────────────────────────────────
-
-export const recommendationOptions = [
-  "Continue ordinary classroom teaching and monitor",
-  "Provide simple classroom strategies for the flagged areas",
-  "Begin targeted support",
-  "Discuss with parents / caregivers",
-  "Consult an Occupational Therapist or relevant professional",
-];
+// The doc's "Teacher recommendation" checklist is deliberately left out for
+// now — the screener already asks a lot, and the results page says what to
+// focus on. The results page still renders `reflection.recommendations` if a
+// screening happens to carry them, so nothing already saved is lost.
 
 export const closingNote =
   "A foundation difficulty should guide the support provided — but it should not delay explicit letter teaching and actual handwriting practice. This is a teacher screening tool, not a standardised assessment, so it does not produce a diagnostic total score.";

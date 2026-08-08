@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import ProgramTimeline from "@/components/ProgramTimeline";
 import { buildProgram, sessionCounts, MAX_DOMAINS } from "@/lib/programBuilder";
+import PaperPencilMark from "@/components/PaperPencilMark";
 import {
-  essentialRule,
+  philosophy,
   howToUse,
   sessionShape,
-  safetyPrinciples,
-  progressMonitoring,
-  endOfProgramReflection,
 } from "@/lib/programContent";
 
 export const metadata: Metadata = {
@@ -57,82 +54,93 @@ export default function ProgramsPage() {
         worked example so you can see exactly what a teacher would receive.
       </p>
 
-      {/* Example banner — this page is not real student data */}
-      <div className="mt-8 rounded-2xl border border-msot-yellow/50 bg-msot-yellow/10 px-5 py-4">
-        <p className="text-sm font-bold uppercase tracking-wide text-msot-navy">
-          Example only
-        </p>
-        <p className="mt-1 leading-7 text-foreground/75">
-          This program is for an invented student and nothing on this page is
-          saved. Ticking a week off is just a preview of how it will feel.
-        </p>
-      </div>
-
-      {/* The student this program is for */}
-      <section className="mt-10 rounded-2xl bg-msot-blue p-6 text-white sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white/70">
-          Program for
-        </p>
-        <h2 className="mt-1 text-2xl font-bold">
-          {demoStudent.initials} · {demoStudent.yearLevel}
-        </h2>
-        <p className="mt-2 leading-7 text-white/85">
-          Flagged in {program.domains.length} foundations {demoStudent.screenedOn}.
-          The program focuses on the {MAX_DOMAINS} areas of greatest need, with
-          the most-affected area coming round most often.
-        </p>
-
-        <ul className="mt-5 grid gap-2 sm:grid-cols-2">
-          {counts.map(({ domain, count }, i) => (
-            <li
-              key={domain.id}
-              className="flex items-center gap-3 rounded-xl bg-white/10 px-3 py-2.5"
-            >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-msot-blue">
-                {i + 1}
-              </span>
-              <span className="min-w-0 flex-1 text-sm font-medium">
-                {domain.title}
-              </span>
-              <span className="shrink-0 text-xs text-white/70">
-                {count} {count === 1 ? "session" : "sessions"}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* How a session runs */}
-      <section className="mt-10">
-        <h2 className="text-xl font-bold text-msot-navy">
-          How every session runs
-        </h2>
-        <p className="mt-2 leading-7 text-foreground/70">{howToUse}</p>
-
-        <p className="mt-5 rounded-xl bg-msot-cyan/10 px-4 py-3 text-center text-sm font-semibold text-msot-navy">
-          {sessionShape.headline}
-        </p>
-
-        <ol className="mt-4 space-y-2">
-          {sessionShape.steps.map((step, i) => (
-            <li key={i} className="flex gap-3 leading-7 text-foreground/80">
-              <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-msot-blue/10 text-xs font-bold text-msot-blue">
-                {i + 1}
-              </span>
-              {step}
-            </li>
-          ))}
-        </ol>
-
-        <div className="mt-6 rounded-2xl border-l-4 border-msot-red bg-msot-red/[.06] px-5 py-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-msot-red">
-            The essential rule
+      {/*
+        The example program and the shape of a session share one yellow panel.
+        Scaled down deliberately — this is a look at the product, not the
+        product itself, so it reads as a sample rather than something to work
+        through.
+      */}
+      <section className="mt-10 rounded-2xl border border-msot-yellow/50 bg-msot-yellow/10 p-5 sm:p-6">
+        <div className="rounded-xl bg-msot-blue px-5 py-4 text-white">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-white/70">
+            Program for
           </p>
-          <p className="mt-1.5 leading-7 text-foreground/80">{essentialRule}</p>
+          <h2 className="mt-0.5 text-lg font-bold">
+            {demoStudent.initials} · {demoStudent.yearLevel}
+          </h2>
+          <p className="mt-1.5 text-sm leading-6 text-white/85">
+            Flagged in {program.domains.length} foundations{" "}
+            {demoStudent.screenedOn}. The program focuses on the {MAX_DOMAINS}{" "}
+            areas of greatest need, with the most-affected area coming round
+            most often.
+          </p>
+
+          <ul className="mt-4 grid gap-1.5 sm:grid-cols-2">
+            {counts.map(({ domain, count }, i) => (
+              <li
+                key={domain.id}
+                className="flex items-center gap-2.5 rounded-lg bg-white/10 px-2.5 py-2"
+              >
+                <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white text-[10px] font-bold text-msot-blue">
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1 text-xs font-medium">
+                  {domain.title}
+                </span>
+                <span className="shrink-0 text-[10px] text-white/70">
+                  {count} {count === 1 ? "session" : "sessions"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* How a session runs */}
+        <div className="mt-5">
+          <h2 className="font-bold text-msot-navy">How every session runs</h2>
+          <p className="mt-1.5 text-sm leading-6 text-foreground/70">
+            {howToUse}
+          </p>
+
+          <p className="mt-4 text-sm font-semibold text-msot-navy">
+            {sessionShape.headline}
+          </p>
+          <ol className="mt-2.5 space-y-2">
+            {sessionShape.steps.map((step, i) => (
+              <li
+                key={step.title}
+                className="rounded-lg bg-white/70 px-3.5 py-2.5"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-msot-blue text-[10px] font-bold text-white">
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 text-sm font-semibold text-msot-navy">
+                    {step.title}
+                  </span>
+                  <span className="shrink-0 text-xs font-medium text-foreground/60">
+                    {step.timing}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm leading-6 text-foreground/70">
+                  {step.detail}
+                </p>
+              </li>
+            ))}
+          </ol>
+
+          <div className="mt-4 rounded-lg border-l-4 border-msot-teal bg-msot-teal/[.09] px-3.5 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-msot-teal">
+              {philosophy.title}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-foreground/80">
+              {philosophy.body}
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* The ten weeks */}
+      {/* The ten weeks, shown as a screenshot rather than something to use */}
       <section className="mt-12">
         <h2 className="text-xl font-bold text-msot-navy">The ten weeks</h2>
         <p className="mt-2 leading-7 text-foreground/70">
@@ -140,77 +148,125 @@ export default function ProgramsPage() {
           before it has been completed, so the program is worked through as a
           progression rather than dipped into.
         </p>
-        <div className="mt-5">
-          <ProgramTimeline
-            weeks={program.weeks.map((w) => ({
-              week: w.week,
-              domainTitle: w.domain.title,
-              session: w.session,
-            }))}
-            completedWeeks={[]}
-          />
-        </div>
-      </section>
 
-      {/* Progress monitoring */}
-      <section className="mt-12">
-        <h2 className="text-xl font-bold text-msot-navy">
-          Simple progress monitoring
-        </h2>
-        <div className="mt-4 space-y-3">
-          {progressMonitoring.map((row) => (
-            <div
-              key={row.record}
-              className="rounded-2xl border border-black/[.08] px-5 py-4"
-            >
-              <p className="font-semibold text-msot-navy">{row.record}</p>
-              <p className="mt-1 leading-7 text-foreground/75">{row.examples}</p>
-              <p className="mt-2 text-sm italic text-foreground/55">
-                {row.manageable}
-              </p>
+        {/*
+          A laptop mock-up. Everything inside is static markup, not the real
+          ProgramTimeline — on a public page there is nothing to tick off and
+          nothing to save, so a visitor should never find something that looks
+          clickable and isn't. `select-none` and `pointer-events-none` make
+          that literal.
+        */}
+        <figure className="mt-6">
+          <div className="mx-auto max-w-2xl">
+            {/* screen */}
+            <div className="rounded-t-xl border-[10px] border-b-[6px] border-msot-navy bg-white shadow-xl">
+              {/* window chrome */}
+              <div className="flex items-center gap-1.5 border-b border-black/[.07] bg-black/[.03] px-3 py-2">
+                <span className="h-2 w-2 rounded-full bg-msot-red/50" />
+                <span className="h-2 w-2 rounded-full bg-msot-yellow" />
+                <span className="h-2 w-2 rounded-full bg-msot-teal/70" />
+                <span className="ml-2 truncate text-[10px] text-foreground/40">
+                  {demoStudent.initials} · 10-week program
+                </span>
+              </div>
+
+              <div className="pointer-events-none select-none px-4 py-4">
+                {/* progress bar */}
+                <div className="flex items-baseline justify-between">
+                  <p className="text-xs font-semibold text-msot-navy">
+                    Week 1 of {program.weeks.length}
+                  </p>
+                  <p className="text-[10px] text-foreground/50">0 completed</p>
+                </div>
+                <div className="mt-1.5 flex h-1.5 gap-1">
+                  {program.weeks.map((w) => (
+                    <span
+                      key={w.week}
+                      className={`flex-1 rounded-full ${
+                        w.week === 1 ? "bg-msot-blue/40" : "bg-black/[.07]"
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* the weeks */}
+                <ol className="mt-3 space-y-1.5">
+                  {program.weeks.map((w) => (
+                    <li
+                      key={w.week}
+                      className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 ${
+                        w.week === 1
+                          ? "border-msot-blue/30 bg-white"
+                          : "border-black/[.07] bg-black/[.02]"
+                      }`}
+                    >
+                      <span
+                        className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-bold ${
+                          w.week === 1
+                            ? "bg-msot-blue text-white"
+                            : "bg-black/[.06] text-foreground/40"
+                        }`}
+                      >
+                        {w.week}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={`block truncate text-[9px] font-semibold uppercase tracking-wide ${
+                            w.week === 1
+                              ? "text-msot-blue"
+                              : "text-foreground/35"
+                          }`}
+                        >
+                          {w.domain.title}
+                        </span>
+                        <span
+                          className={`block truncate text-xs font-semibold ${
+                            w.week === 1
+                              ? "text-msot-navy"
+                              : "text-foreground/40"
+                          }`}
+                        >
+                          {w.week === 1 ? w.session.title : "Locked"}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             </div>
-          ))}
-        </div>
+
+            {/* laptop base */}
+            <div className="mx-auto h-3 rounded-b-lg bg-msot-navy" />
+            <div className="mx-auto h-1.5 w-1/3 rounded-b-xl bg-msot-navy/60" />
+          </div>
+          <figcaption className="mt-4 text-center text-sm text-foreground/50">
+            How the program looks once a student has been screened.
+          </figcaption>
+        </figure>
       </section>
 
-      {/* Safety */}
-      <section className="mt-12">
-        <h2 className="text-xl font-bold text-msot-navy">
-          Principles for safe, useful intervention
+      {/*
+        The one thing to do from this page. Monitoring guidance, safety
+        principles and the end-of-program reflection all used to sit here —
+        they belong inside a real program, where a teacher is actually running
+        sessions, not on the page that explains what a program is.
+      */}
+      <div className="relative mt-12 rounded-2xl border border-msot-teal/25 bg-msot-teal/[.06] p-7">
+        <h2 className="text-2xl font-bold leading-snug text-msot-navy">
+          Screen a student now and build a program
         </h2>
-        <ul className="mt-4 space-y-2.5">
-          {safetyPrinciples.map((principle, i) => (
-            <li key={i} className="flex gap-3 leading-7 text-foreground/80">
-              <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-msot-red" />
-              {principle}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* End of program */}
-      <section className="mt-12 rounded-2xl bg-msot-cyan/10 px-6 py-6">
-        <h2 className="text-lg font-bold text-msot-navy">
-          End-of-program reflection
-        </h2>
-        <p className="mt-2 leading-7 text-foreground/80">
-          {endOfProgramReflection}
-        </p>
-      </section>
-
-      {/* CTA */}
-      <div className="mt-12 rounded-2xl bg-msot-navy p-8 text-center text-white">
-        <h2 className="text-2xl font-bold">Build one for your student</h2>
-        <p className="mx-auto mt-2 max-w-md text-white/85">
-          Screen a student across the eight foundations and their program is
-          built from the areas that need support.
+        <p className="mt-2 max-w-lg leading-7 text-foreground/70">
+          Screen a student across the eight foundations and their 10-week
+          program is built from the areas that need support.
         </p>
         <Link
           href="/login"
-          className="mt-6 inline-flex rounded-full bg-white px-7 py-3 text-lg font-semibold text-msot-navy transition-transform hover:scale-[1.03]"
+          className="mt-6 inline-flex rounded-full bg-msot-teal px-6 py-3 font-medium text-white transition-colors hover:brightness-95"
         >
-          Log in to get started →
+          Screen a student →
         </Link>
+
+        <PaperPencilMark className="pointer-events-none absolute bottom-6 right-6 h-14 w-14" />
       </div>
     </div>
   );

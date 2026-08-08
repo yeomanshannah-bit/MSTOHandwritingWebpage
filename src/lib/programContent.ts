@@ -34,21 +34,47 @@ export type ProgramDomain = {
 };
 
 /** How every session is structured — shown once at the top of a program. */
+/*
+  The shape of every session, shown once under "Before you start" rather than
+  repeated week to week. Each step carries its own timing so a teacher can see
+  at a glance that the whole thing fits inside about ten minutes.
+*/
 export const sessionShape = {
-  headline: "Foundation activity  \u2192  Direct handwriting practice  \u2192  One focused check",
+  headline: "Our program will follow this order each week",
   steps: [
-    "1-2 minutes: Prepare the foundation skill using the weekly activity.",
-    "3-5 minutes: Explicitly teach and practise the current shape, letter or handwriting target.",
-    "1-2 minutes: Check one feature and identify one success.",
+    {
+      title: "Foundation activity",
+      timing: "2\u20135 minutes",
+      detail:
+        "Prepare the child's foundation skill \u2014 the fundamentals that lie beneath what we see in poor handwriting.",
+    },
+    {
+      title: "Direct handwriting practice",
+      timing: "5\u201310 minutes",
+      detail:
+        "Teach and practise the recommended letters and pre-writing shapes.",
+    },
+    {
+      title: "Check",
+      timing: "1\u20132 minutes",
+      detail:
+        "Identify one current challenge or one strength in the activity.",
+    },
   ],
 };
 
-/** The non-negotiable, called out on its own in the source document. */
-export const essentialRule =
-  "These activities support handwriting readiness, but they do not replace handwriting instruction. Every session ends with immediate practice of a developmentally appropriate pre-writing shape, explicitly taught letter formation, word or short sentence.";
+/*
+  Replaces the old "essential rule". Teachers expect a program to start at A
+  and work through the alphabet, so the departure from that is explained up
+  front rather than left to be noticed and doubted in week 3.
+*/
+export const philosophy = {
+  title: "Our evidence-based philosophy",
+  body: "You'll notice we do not recommend starting with the traditional alphabetic sequence. Our activities recommend letters that are developmentally appropriate for your student \u2014 usually building on vertical and horizontal lines first, before circular and diagonal shapes.",
+};
 
 export const howToUse =
-  "Complete one brief session each week for 10 weeks. Activities can be repeated more frequently when helpful; the weekly order provides a progression, not a rigid timetable.";
+  "We recommend you complete one session each week for 10 weeks. Activities can be repeated more than once within the same week. The order we have built is based on your student's areas of challenge identified in the screener, and will provide tailored progressions.";
 
 export const safetyPrinciples = [
   "Use the child\u2019s school-approved letter style and the same short formation language across adults.",

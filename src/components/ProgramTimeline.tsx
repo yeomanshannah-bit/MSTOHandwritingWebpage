@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import SessionDetail from "./SessionDetail";
 import type { Session } from "@/lib/programContent";
 
@@ -36,16 +36,92 @@ export default function ProgramTimeline({
   observations = {},
   onComplete,
   onReopen,
+  weekOneIntro,
+  draftKey,
 }: {
   weeks: TimelineWeek[];
   completedWeeks: number[];
   observations?: Record<number, string | null>;
   onComplete?: (week: number, observation: string) => Promise<void>;
   onReopen?: (week: number) => Promise<void>;
+  /** Rendered at the top of week 1 only — used for the letters to start with,
+      which are a week-1 teaching decision rather than a standing note. */
+  weekOneIntro?: React.ReactNode;
+  /** Unique key (the program id) for keeping unsaved notes in the browser.
+      Omit on the public example, where nothing should persist. */
+  draftKey?: string;
 }) {
   const [done, setDone] = useState<number[]>(completedWeeks);
-  const [note, setNote] = useState("");
   const [pending, startTransition] = useTransition();
+
+  /*
+    One note per week, not a single shared box.
+
+    The old version kept a single `note` string for the whole timeline, which
+    caused two problems: text typed against one week followed you to another,
+    and reopening a completed week showed an empty box — so saving again
+    overwrote a good observation with nothing.
+
+    Notes start from whatever is already saved, then any unsaved typing is
+    layered on top from the browser.
+  */
+  const [notes, setNotes] = useState<Record<number, string>>(() =>
+    Object.fromEntries(
+      Object.entries(observations).map(([w, text]) => [Number(w), text ?? ""]),
+    ),
+  );
+
+  const storageKey = draftKey ? `msot:program-notes:${draftKey}` : null;
+  const loaded = useRef(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!storageKey) {
+      loaded.current = true;
+      return;
+    }
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (raw) {
+        const drafts = JSON.parse(raw) as Record<string, string>;
+        setNotes((prev) => {
+          const next = { ...prev };
+          for (const [w, text] of Object.entries(drafts)) {
+            if (text) next[Number(w)] = text;
+          }
+          return next;
+        });
+        setDraftSaved(true);
+      }
+    } catch {
+      // A corrupt draft should never block the program.
+    }
+    loaded.current = true;
+  }, [storageKey]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Autosave typing to the browser, so a half-written observation survives
+  // navigating away before the week is marked complete.
+  const saveDrafts = useCallback(() => {
+    if (!storageKey || !loaded.current) return;
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(notes));
+      setDraftSaved(true);
+    } catch {
+      /* private browsing or full quota */
+    }
+  }, [storageKey, notes]);
+
+  useEffect(() => {
+    if (!loaded.current) return;
+    const t = setTimeout(saveDrafts, 600);
+    return () => clearTimeout(t);
+  }, [saveDrafts]);
+
+  function setNote(week: number, text: string) {
+    setNotes((prev) => ({ ...prev, [week]: text }));
+  }
 
   // Weeks are completed in order, so the next one to do is simply the first
   // week without a tick.
@@ -59,10 +135,23 @@ export default function ProgramTimeline({
   }
 
   function complete(week: number) {
-    const observation = note.trim();
-    setDone((d) => [...d, week].sort((a, b) => a - b));
-    setNote("");
+    const observation = (notes[week] ?? "").trim();
+    setDone((d) => (d.includes(week) ? d : [...d, week].sort((a, b) => a - b)));
     setOpenWeek(week + 1 <= weeks.length ? week + 1 : null);
+    if (onComplete) {
+      startTransition(async () => {
+        await onComplete(week, observation);
+      });
+    }
+  }
+
+  /*
+    Save an observation on a week that is already complete, without changing
+    its completed state. completeWeek() upserts on (program_id, week), so
+    calling it again simply updates the note.
+  */
+  function saveNote(week: number) {
+    const observation = (notes[week] ?? "").trim();
     if (onComplete) {
       startTransition(async () => {
         await onComplete(week, observation);
@@ -195,6 +284,7 @@ export default function ProgramTimeline({
 
                 {isOpen && !locked && (
                   <div className="border-t border-black/[.06] px-4 py-5 sm:px-5">
+                    {w.week === 1 && weekOneIntro}
                     <SessionDetail session={w.session} />
 
                     {status === "current" ? (
@@ -207,12 +297,18 @@ export default function ProgramTimeline({
                         </label>
                         <textarea
                           id={`note-${w.week}`}
-                          value={note}
-                          onChange={(e) => setNote(e.target.value)}
+                          value={notes[w.week] ?? ""}
+                          onChange={(e) => setNote(w.week, e.target.value)}
                           rows={3}
                           placeholder="Independence, performance, participation — what the child said and did."
                           className="mt-1.5 w-full rounded-xl border border-black/10 px-3.5 py-2.5 text-[15px] outline-none focus:border-msot-blue focus:ring-2 focus:ring-msot-blue/20"
                         />
+                        {draftSaved && (notes[w.week] ?? "") !== "" && (
+                          <p className="mt-1 text-xs text-foreground/45">
+                            Kept on this device — saved for good when you mark
+                            the week complete.
+                          </p>
+                        )}
                         <button
                           onClick={() => complete(w.week)}
                           disabled={pending}
@@ -226,22 +322,40 @@ export default function ProgramTimeline({
                         </button>
                       </div>
                     ) : (
-                      <div className="mt-5 border-t border-black/[.06] pt-4">
-                        {observations[w.week] && (
-                          <p className="mb-3 rounded-xl bg-msot-teal/[.08] px-3.5 py-2.5 text-[15px] leading-7 text-foreground/75">
-                            <span className="font-semibold text-msot-navy">
-                              You noticed:{" "}
-                            </span>
-                            {observations[w.week]}
-                          </p>
-                        )}
-                        <button
-                          onClick={() => reopen(w.week)}
-                          disabled={pending}
-                          className="text-sm font-medium text-foreground/50 hover:text-msot-blue disabled:opacity-60"
+                      // A completed week keeps an editable note: teachers often
+                      // remember something after ticking the box, and the old
+                      // read-only panel gave them nowhere to put it.
+                      <div className="mt-5 border-t border-black/[.06] pt-5">
+                        <label
+                          htmlFor={`note-${w.week}`}
+                          className="text-[11px] font-bold uppercase tracking-wide text-foreground/45"
                         >
-                          Reopen this week
-                        </button>
+                          What did you notice? (optional)
+                        </label>
+                        <textarea
+                          id={`note-${w.week}`}
+                          value={notes[w.week] ?? ""}
+                          onChange={(e) => setNote(w.week, e.target.value)}
+                          rows={3}
+                          placeholder="Independence, performance, participation — what the child said and did."
+                          className="mt-1.5 w-full rounded-xl border border-black/10 px-3.5 py-2.5 text-[15px] outline-none focus:border-msot-blue focus:ring-2 focus:ring-msot-blue/20"
+                        />
+                        <div className="mt-3 flex flex-wrap items-center gap-4">
+                          <button
+                            onClick={() => saveNote(w.week)}
+                            disabled={pending}
+                            className="rounded-full bg-msot-teal px-5 py-2 text-sm font-semibold text-white transition-colors hover:brightness-95 disabled:opacity-60"
+                          >
+                            {pending ? "Saving…" : "Save note"}
+                          </button>
+                          <button
+                            onClick={() => reopen(w.week)}
+                            disabled={pending}
+                            className="text-sm font-medium text-foreground/50 hover:text-msot-blue disabled:opacity-60"
+                          >
+                            Reopen this week
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>

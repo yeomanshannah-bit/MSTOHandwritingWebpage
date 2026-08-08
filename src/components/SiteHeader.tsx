@@ -9,7 +9,7 @@ import Image from "next/image";
 */
 export default function SiteHeader() {
   return (
-    <header className="w-full border-b border-black/[.06] bg-white/80 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b border-black/[.06] bg-white/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
         <Link href="/" className="flex items-center">
           <Image
