@@ -113,12 +113,10 @@ export const foundations: Foundation[] = [
     "The child has difficulty keeping their feet and body stable.",
     "The child frequently changes position or leaves their seat during writing.",
     "The child appears physically tired during longer writing activities.",
-    "The child uses large movements from the shoulder rather than controlled movements of the hand and fingers.",
   ]),
   foundation(2, "bilateral-coordination", "Bilateral Coordination", [
     "The child does not consistently use their other hand to hold the paper.",
     "The child frequently swaps the pencil between hands.",
-    "The child turns their body or paper excessively instead of reaching across the page.",
     "The child has difficulty moving smoothly across the page from left to right.",
     "The child also finds two-handed classroom activities, such as cutting, ruling or opening containers, difficult.",
   ]),
@@ -134,7 +132,6 @@ export const foundations: Foundation[] = [
     "The child is easily distracted or distressed by ordinary classroom noise, touch or movement.",
     "The child frequently seeks movement, pressure or tactile input during writing.",
     "The child appears unaware of how much pressure they are using with the pencil.",
-    "The child does not readily notice when their position is uncomfortable or their hand is becoming tired.",
   ]),
   foundation(5, "visual-perception", "Visual Perception", [
     "The child confuses letters or shapes that look similar.",
@@ -144,7 +141,6 @@ export const foundations: Foundation[] = [
     "The child has difficulty remembering the visual appearance of familiar letters.",
   ]),
   foundation(6, "visual-motor-integration", "Visual-Motor Integration", [
-    "The child has difficulty copying pre-writing shapes expected for their developmental level.",
     "The child has difficulty copying simple patterns, drawings or letters.",
     "Letters are uneven in size or poorly positioned on the writing line.",
     "The child finds copying from the board more difficult than copying from a nearby model.",
@@ -282,7 +278,7 @@ export const confidenceItems: Item[] = items("confidence", [
 ]);
 
 export const confidenceNote =
-  "Emotional distress is often a consequence of handwriting being persistently difficult, rather than the original cause. This is a short section alongside the eight foundations — not a ninth foundation.";
+  "Emotional distress is often a consequence of handwriting being persistently difficult, rather than the original cause.";
 
 // The doc's "Teacher recommendation" checklist is deliberately left out for
 // now — the screener already asks a lot, and the results page says what to
@@ -316,7 +312,11 @@ export type Responses = Record<string, Rating>;
  * How a foundation came out. `status` drives the summary table; `flagged`
  * (support OR monitor) is what the program builder draws on, worst first.
  */
-export type FoundationStatus = "support" | "monitor" | "clear";
+export type FoundationStatus =
+  | "support"
+  | "monitor"
+  | "clear"
+  | "not-assessed";
 
 export type FoundationScore = {
   id: string;
@@ -328,6 +328,13 @@ export type FoundationScore = {
   unsure: number;
   /** Total concern weight (sometimes = 1, often = 2) — used for ordering. */
   concern: number;
+  /** Statements answered on the frequency scale ("Not sure" doesn't count). */
+  rated: number;
+  /** Statements in this foundation, rated or not. */
+  total: number;
+  /** Concern as a percentage of the most that could be scored on the rated
+   *  statements, 0-100. `null` when too little was rated to say. */
+  percent: number | null;
   status: FoundationStatus;
   flagged: boolean;
 };
@@ -335,17 +342,49 @@ export type FoundationScore = {
 export const statusLabel: Record<FoundationStatus, string> = {
   support: "Needs support",
   monitor: "Monitor",
-  clear: "—",
+  clear: "Age appropriate",
+  "not-assessed": "Not assessed",
 };
 
 /**
- * The rule for a foundation's status. Two "often"s, or one "often" backed by
- * repeated "sometimes", is a pattern worth acting on; a single "often" or
- * repeated "sometimes" on its own is worth watching. Tunable in one place.
+ * How much of a section has to be answered before a percentage means
+ * anything. Half the statements, rounded up — below that we say "not
+ * assessed" rather than scoring a fragment. "Not sure" is not an answer here:
+ * it's an explicit "I haven't seen this", so it never counts toward this.
  */
-function statusFor(often: number, sometimes: number): FoundationStatus {
-  if (often >= 2 || (often >= 1 && sometimes >= 2)) return "support";
-  if (often >= 1 || sometimes >= 2) return "monitor";
+function enoughAnswered(rated: number, total: number): boolean {
+  return rated >= Math.ceil(total / 2);
+}
+
+/**
+ * A section's score as a percentage. The denominator is the most concern the
+ * ANSWERED statements could carry (2 points each, for "often"), so skipping a
+ * statement as "Not sure" neither helps nor hurts the child's percentage.
+ */
+function percentOf(concern: number, rated: number): number {
+  return rated === 0 ? 0 : (concern / (rated * 2)) * 100;
+}
+
+/**
+ * The rule for a section's status, as a percentage of the concern possible:
+ *
+ *   above 50%   needs support   (red)
+ *   exactly 50% monitor         (yellow)
+ *   below 50%   age appropriate (green)
+ *   too few answers             not assessed (blue)
+ *
+ * Tunable in one place — everything downstream reads the status, not the
+ * numbers behind it.
+ */
+export function statusFor(
+  concern: number,
+  rated: number,
+  total: number,
+): FoundationStatus {
+  if (!enoughAnswered(rated, total)) return "not-assessed";
+  const percent = percentOf(concern, rated);
+  if (percent > 50) return "support";
+  if (percent === 50) return "monitor";
   return "clear";
 }
 
@@ -366,6 +405,13 @@ export type ConfidenceScore = {
   concern: number;
   /** True when the child's feelings about writing warrant a mention. */
   raised: boolean;
+  /**
+   * The statements the teacher actually noticed, "often" first. Part 3 is
+   * there to get staff thinking about the distress handwriting can cause, so
+   * the results hand these back rather than only reporting a verdict — the
+   * specifics are what prompt a teacher, not the label.
+   */
+  noticed: { label: string; rating: Rating }[];
 };
 
 export type ScreeningResult = {
@@ -374,7 +420,11 @@ export type ScreeningResult = {
   /** Every flagged foundation, worst first — these become the program's focus. */
   flaggedFoundations: FoundationScore[];
   confidence: ConfidenceScore;
-  /** True when nothing at all was flagged beneath the surface. */
+  /** Foundations left "not assessed" — too little was answered to score them. */
+  notAssessedFoundations: FoundationScore[];
+  /** True when nothing that WAS assessed came out at or above the halfway
+   *  mark. Read it alongside `notAssessedFoundations`: no flags on a mostly
+   *  unanswered screener is not the same as a child on track. */
   onTrack: boolean;
 };
 
@@ -405,9 +455,14 @@ export function scoreScreening(responses: Responses): ScreeningResult {
   const n = tally(noticeItemIds, responses);
   const notice: NoticeScore = {
     ...n,
-    // The same threshold as a foundation: one clear "often", or a repeated
-    // "sometimes" pattern, means handwriting is affecting participation.
-    affectingParticipation: n.often >= 1 || n.sometimes >= 2,
+    // Deliberately the most sensitive rule in the tool: ANY statement rated
+    // above "rarely" counts. Part 1 is a gate, not a finding — it only asks
+    // whether it's worth looking underneath. A child whose handwriting
+    // affects participation even sometimes is worth looking at, and the cost
+    // of looking is low. The percentage rule that governs the foundations is
+    // deliberately NOT used here; the foundations decide where help is
+    // needed, this only decides whether to ask the question.
+    affectingParticipation: n.often >= 1 || n.sometimes >= 1,
   };
 
   const scored: FoundationScore[] = foundations.map((f) => {
@@ -415,22 +470,35 @@ export function scoreScreening(responses: Responses): ScreeningResult {
       f.items.map((i) => i.id),
       responses,
     );
-    const status = statusFor(t.often, t.sometimes);
+    // "Not sure" and unanswered statements are both excluded from the
+    // percentage — only the frequency ratings count.
+    const rated = t.often + t.sometimes + t.rarely;
+    const total = f.items.length;
+    const status = statusFor(t.concern, rated, total);
     return {
       id: f.id,
       number: f.number,
       title: f.title,
       ...t,
+      rated,
+      total,
+      percent: status === "not-assessed" ? null : percentOf(t.concern, rated),
       status,
-      flagged: status !== "clear",
+      // A foundation only drives the program when it was actually assessed
+      // and came out at or above the halfway mark.
+      flagged: status === "support" || status === "monitor",
     };
   });
 
+  // Worst first, by percentage — a section scoring 75% on four answered
+  // statements outranks one scoring 60% on five, however the raw counts fall.
   const flaggedFoundations = scored
     .filter((f) => f.flagged)
     .sort(
       (a, b) =>
-        b.often - a.often || b.sometimes - a.sometimes || b.concern - a.concern,
+        (b.percent ?? 0) - (a.percent ?? 0) ||
+        b.often - a.often ||
+        b.concern - a.concern,
     );
 
   const c = tally(confidenceItemIds, responses);
@@ -439,6 +507,16 @@ export function scoreScreening(responses: Responses): ScreeningResult {
     sometimes: c.sometimes,
     concern: c.concern,
     raised: c.often >= 1 || c.sometimes >= 2,
+    // Listed even when the verdict stays quiet — a single "sometimes" doesn't
+    // reach the threshold, but it is still something the teacher saw and is
+    // worth handing back to them.
+    noticed: confidenceItems
+      .map((i) => ({ label: i.label, rating: responses[i.id] }))
+      .filter(
+        (n): n is { label: string; rating: Rating } =>
+          n.rating === "often" || n.rating === "sometimes",
+      )
+      .sort((a, b) => (a.rating === b.rating ? 0 : a.rating === "often" ? -1 : 1)),
   };
 
   return {
@@ -446,6 +524,7 @@ export function scoreScreening(responses: Responses): ScreeningResult {
     foundations: scored,
     flaggedFoundations,
     confidence,
+    notAssessedFoundations: scored.filter((f) => f.status === "not-assessed"),
     onTrack: flaggedFoundations.length === 0,
   };
 }

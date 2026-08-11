@@ -6,6 +6,7 @@ import {
   scoreScreening,
   statusLabel,
   closingNote,
+  confidenceNote,
   type Responses,
   type FoundationStatus,
 } from "@/lib/screening";
@@ -15,10 +16,18 @@ import {
   surface, then the eight foundations beneath it, then the confidence thread.
 */
 
+/*
+  The four status colours, fixed by the scoring rule:
+    red    above 50%  — needs support
+    yellow at 50%     — monitor
+    green  below 50%  — age appropriate
+    blue   too few answers — not assessed
+*/
 const statusStyle: Record<FoundationStatus, string> = {
   support: "bg-msot-red/10 text-msot-red",
   monitor: "bg-msot-yellow/25 text-msot-navy",
-  clear: "bg-black/[.04] text-foreground/50",
+  clear: "bg-msot-teal/15 text-msot-teal",
+  "not-assessed": "bg-msot-blue/10 text-msot-blue",
 };
 
 type Reflection = {
@@ -56,8 +65,14 @@ export default async function ResultsPage({
 
   // Recompute the summary from the stored answers (one source of truth).
   const result = scoreScreening(screening.responses as Responses);
-  const { notice, foundations, flaggedFoundations, confidence, onTrack } =
-    result;
+  const {
+    notice,
+    foundations,
+    flaggedFoundations,
+    confidence,
+    notAssessedFoundations,
+    onTrack,
+  } = result;
 
   const reflection = (screening.reflection ?? {}) as Reflection;
 
@@ -109,6 +124,18 @@ export default async function ResultsPage({
           {notice.rarely} rarely
           {notice.unsure > 0 && ` · ${notice.unsure} not sure`}
         </p>
+        {/*
+          Part 1 trips on a single "sometimes", so the panel says how firmly.
+          Without this, one occasional observation and eight persistent ones
+          would read identically — true in both cases, but not the same news.
+        */}
+        {notice.affectingParticipation && (
+          <p className="mt-2 text-sm leading-6 text-foreground/70">
+            {notice.often === 0
+              ? "This is an early signal — nothing was rated “often”, but any impact on participation is worth looking underneath for."
+              : `Handwriting is persistently affecting participation: ${notice.often} statement${notice.often > 1 ? "s were" : " was"} rated “often”.`}
+          </p>
+        )}
       </div>
 
       {/* ── Part 2 · the foundations ─────────────────────────────── */}
@@ -120,8 +147,8 @@ export default async function ResultsPage({
           <thead>
             <tr className="border-b border-black/10 text-left text-xs uppercase tracking-wide text-foreground/50">
               <th className="py-2 pr-2 font-semibold">Foundation</th>
-              <th className="px-2 py-2 text-center font-semibold">Often</th>
-              <th className="px-2 py-2 text-center font-semibold">Sometimes</th>
+              <th className="px-2 py-2 text-center font-semibold">Score</th>
+              <th className="px-2 py-2 text-center font-semibold">Answered</th>
               <th className="py-2 pl-2 text-right font-semibold">Status</th>
             </tr>
           </thead>
@@ -133,10 +160,12 @@ export default async function ResultsPage({
                   {f.title}
                 </td>
                 <td className="px-2 py-2.5 text-center tabular-nums text-foreground/70">
-                  {f.often}
+                  {/* Rounded for reading; the status itself is decided on the
+                      exact value, so a 50% shown here is a true 50%. */}
+                  {f.percent === null ? "—" : `${Math.round(f.percent)}%`}
                 </td>
                 <td className="px-2 py-2.5 text-center tabular-nums text-foreground/70">
-                  {f.sometimes}
+                  {f.rated} of {f.total}
                 </td>
                 <td className="py-2.5 pl-2 text-right">
                   <span
@@ -150,6 +179,28 @@ export default async function ResultsPage({
           </tbody>
         </table>
       </div>
+
+      {/* The rule, stated plainly, so the colours never need decoding. Each
+          swatch matches the pill in the row above it. */}
+      <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-foreground/60">
+        {[
+          ["bg-msot-red", "Above 50% — needs support"],
+          ["bg-msot-yellow", "50% — monitor"],
+          ["bg-msot-teal", "Below 50% — age appropriate"],
+          ["bg-msot-blue", "Too few answers — not assessed"],
+        ].map(([dot, text]) => (
+          <li key={text} className="flex items-center gap-1.5">
+            <span className={`h-2 w-2 rounded-full ${dot}`} aria-hidden />
+            {text}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs leading-5 text-foreground/50">
+        A score is the concern rated in that foundation as a percentage of the
+        most its answered statements could carry (&ldquo;often&rdquo; counts
+        double &ldquo;sometimes&rdquo;). &ldquo;Not sure&rdquo; is left out of
+        both sides, so skipping a statement neither helps nor hurts the score.
+      </p>
 
       {/* Priority areas — every flagged foundation, worst first */}
       <h2 className="mt-10 text-xl font-semibold text-msot-navy">
@@ -177,14 +228,17 @@ export default async function ResultsPage({
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-foreground/70">
+                  {f.percent === null ? "" : `${Math.round(f.percent)}% — `}
+                  {statusLabel[f.status].toLowerCase()}
+                  {" ("}
                   {[
                     f.often > 0 && `${f.often} often`,
                     f.sometimes > 0 && `${f.sometimes} sometimes`,
+                    f.rarely > 0 && `${f.rarely} rarely`,
                   ]
                     .filter(Boolean)
                     .join(", ")}
-                  {" — "}
-                  {statusLabel[f.status].toLowerCase()}.
+                  {")."}
                 </p>
               </div>
             ))}
@@ -192,7 +246,27 @@ export default async function ResultsPage({
         </>
       ) : (
         <p className="mt-3 rounded-xl bg-msot-teal/[.08] p-4 text-foreground/80">
-          No foundations flagged — nothing beneath the surface stood out. 🎉
+          Every foundation scored below 50% — nothing beneath the surface stood
+          out. 🎉
+        </p>
+      )}
+
+      {/*
+        Not-assessed foundations are reported separately from the flagged ones.
+        They are not a finding either way, and saying so matters most when
+        nothing was flagged — a quiet result on a half-finished screener is not
+        the same as a child on track.
+      */}
+      {notAssessedFoundations.length > 0 && (
+        <p className="mt-3 rounded-xl bg-msot-blue/[.06] p-4 text-sm leading-6 text-foreground/75">
+          <span className="font-medium text-msot-navy">
+            {notAssessedFoundations.length} foundation
+            {notAssessedFoundations.length > 1 ? "s were" : " was"} not
+            assessed
+          </span>{" "}
+          — {notAssessedFoundations.map((f) => f.title).join(", ")}. Fewer than
+          half the statements were rated, so there is no score either way.
+          Screen again once you have watched for these in class.
         </p>
       )}
 
@@ -204,13 +278,60 @@ export default async function ResultsPage({
         Writing confidence
       </h2>
       <div className="mt-3 rounded-2xl bg-msot-pink/[.07] p-5">
+        {/*
+          Graded the same way as Part 1: a firm line when something was seen
+          persistently, a softer one when it was only occasional. A child with
+          two passing wobbles shouldn't read like a child who says "I can't
+          write" every day.
+        */}
         <p className="font-medium text-msot-navy">
-          {confidence.raised
+          {confidence.often >= 1
             ? "How this child feels about writing needs attention alongside the foundations."
-            : "No particular concerns about how this child feels about writing."}
+            : confidence.raised
+              ? "Some early signs of frustration or reluctance — worth watching."
+              : "No particular concerns about how this child feels about writing."}
         </p>
         <p className="mt-1.5 text-sm text-foreground/70">
           {confidence.often} often · {confidence.sometimes} sometimes
+        </p>
+
+        {/*
+          The verdict says what to think; this says what was actually seen.
+          Part 3 is here to get staff thinking about the distress handwriting
+          can cause, and the specifics do that work — a label doesn't.
+        */}
+        {confidence.noticed.length > 0 && (
+          <>
+            <p className="mt-4 text-sm font-medium text-msot-navy">
+              What you noticed about {student.initials}
+            </p>
+            <ul className="mt-2 space-y-1.5">
+              {confidence.noticed.map((n) => (
+                <li
+                  key={n.label}
+                  className="flex items-baseline gap-2 text-sm leading-6 text-foreground/75"
+                >
+                  <span className="text-msot-pink" aria-hidden>
+                    •
+                  </span>
+                  <span className="flex-1">{n.label}</span>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                      n.rating === "often"
+                        ? "bg-msot-red/10 text-msot-red"
+                        : "bg-msot-yellow/25 text-msot-navy"
+                    }`}
+                  >
+                    {n.rating}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        <p className="mt-4 text-sm leading-6 text-foreground/60">
+          {confidenceNote}
         </p>
       </div>
 

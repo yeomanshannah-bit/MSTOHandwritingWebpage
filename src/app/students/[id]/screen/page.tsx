@@ -14,6 +14,7 @@ import {
   ratingOptions,
   allItemIds,
   scoreScreening,
+  statusLabel,
   senseIntro,
   ratingGuidance,
   shapeCheckIntro,
@@ -90,7 +91,7 @@ function ItemRow({
       id={`item-${item.id}`}
       className={`scroll-mt-24 rounded-xl border p-4 transition-colors ${
         gap
-          ? "border-msot-orange bg-msot-orange/[.07]"
+          ? "border-msot-red bg-msot-red/[.06]"
           : "border-black/[.06] bg-white/70"
       }`}
     >
@@ -209,6 +210,36 @@ export default function ScreenPage() {
   const remaining = allItemIds.filter((i) => !responses[i]);
   const complete = remaining.length === 0;
 
+  /*
+    Which sections still have unrated statements. Reporting gaps by section
+    rather than as one number tells a teacher where to go — "12 still to
+    rate" is a scolding; "Part 1, Fine Motor Control and Part 3" is an
+    instruction. Each entry keeps the id of its first gap so the name can be
+    clicked to jump straight there.
+  */
+  const sections: { label: string; ids: string[] }[] = [
+    { label: "Part 1 · What you can see", ids: noticeItems.map((i) => i.id) },
+    ...foundations.map((f) => ({
+      label: `${f.number}. ${f.title}`,
+      ids: f.items.map((i) => i.id),
+    })),
+    {
+      label: "Part 3 · Writing confidence",
+      ids: confidenceItems.map((i) => i.id),
+    },
+  ];
+
+  const missingSections = sections
+    .map((s) => {
+      const gaps = s.ids.filter((i) => !responses[i]);
+      return { label: s.label, count: gaps.length, firstId: gaps[0] };
+    })
+    .filter((s) => s.count > 0);
+
+  /** How many statements are unrated in one section — drives the red headings. */
+  const missingIn = (list: Item[]) =>
+    list.filter((i) => !responses[i.id]).length;
+
   // Live scoring drives the Part 1 gate.
   const result = scoreScreening(responses);
 
@@ -249,21 +280,27 @@ export default function ScreenPage() {
     setShapes((prev) => ({ ...prev, [shapeId]: rating }));
   }
 
-  /** Reveal the unrated statements and jump to the first one. */
-  function goToFirstGap() {
+  /** Reveal the unrated statements and jump to one of them. */
+  function goToGap(itemId?: string) {
     setShowGaps(true);
-    const first = remaining[0];
+    const first = itemId ?? remaining[0];
     if (!first) return;
-    document
-      .getElementById(`item-${first}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Wait a frame so the row is already showing its red state when it lands.
+    requestAnimationFrame(() => {
+      document.getElementById(`item-${first}`)?.scrollIntoView({
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+        block: "center",
+      });
+    });
   }
 
   async function handleSubmit() {
-    // Never a dead button: when statements are missing, the action becomes
-    // "show me which ones" instead of doing nothing.
+    // The screening cannot be submitted until every statement is rated. The
+    // button is never dead, though: it turns into "show me which ones",
+    // raising the alert and jumping to the first gap rather than refusing
+    // silently.
     if (!complete) {
-      goToFirstGap();
+      goToGap();
       return;
     }
 
@@ -382,6 +419,7 @@ export default function ScreenPage() {
         eyebrow="Part 1 · Notice"
         title="Is handwriting affecting participation?"
         caption="the tip of the iceberg"
+        missing={showGaps ? missingIn(noticeItems) : 0}
       />
       <div className="mt-4 space-y-3">{rows(noticeItems)}</div>
 
@@ -420,7 +458,10 @@ export default function ScreenPage() {
       <div className="mt-4 space-y-10">
         {foundations.map((f) => {
           const score = result.foundations.find((s) => s.id === f.id)!;
-          const rated = f.items.filter((i) => responses[i.id]).length;
+          // How many statements have been touched at all — including "Not
+          // sure", which counts as answered here even though it is left out
+          // of the score itself.
+          const answered = f.items.filter((i) => responses[i.id]).length;
           return (
             <section key={f.id}>
               <div className="flex items-baseline gap-3">
@@ -430,15 +471,21 @@ export default function ScreenPage() {
                 <h2 className="flex-1 text-lg font-semibold text-msot-navy">
                   {f.title}
                 </h2>
-                <span className="shrink-0 text-xs text-foreground/50">
-                  {rated === f.items.length
-                    ? score.status === "clear"
-                      ? "No concerns"
-                      : score.status === "monitor"
-                        ? "Monitor"
-                        : "Needs support"
-                    : `${rated} of ${f.items.length} rated`}
-                </span>
+                {/* Once every statement has been answered, show the verdict
+                    the results page will give — same labels, same rule. While
+                    gaps are revealed, an unfinished foundation says so in red
+                    instead. */}
+                {showGaps && answered < f.items.length ? (
+                  <span className="shrink-0 rounded-full bg-msot-red/10 px-2.5 py-1 text-xs font-semibold text-msot-red">
+                    {f.items.length - answered} to rate
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-xs text-foreground/50">
+                    {answered === f.items.length
+                      ? statusLabel[score.status]
+                      : `${answered} of ${f.items.length} rated`}
+                  </span>
+                )}
               </div>
               {f.note && (
                 <p className="ml-11 mt-1 text-xs text-foreground/55">{f.note}</p>
@@ -516,6 +563,7 @@ export default function ScreenPage() {
         eyebrow="Part 3 · Confidence"
         title="How the child feels about writing"
         caption="the thread through every foundation"
+        missing={showGaps ? missingIn(confidenceItems) : 0}
       />
       <p className="mt-3 rounded-xl bg-msot-pink/[.07] p-4 text-sm leading-6 text-foreground/75">
         {confidenceNote}
@@ -561,8 +609,45 @@ export default function ScreenPage() {
         </p>
       )}
 
-      {/* Sticky bottom bar: progress + submit */}
+      {/* Sticky bottom bar: the alert (once raised), then progress + submit */}
       <div className="fixed inset-x-0 bottom-0 border-t border-black/10 bg-white/95 backdrop-blur">
+        {/*
+          Raised only after a teacher tries to submit — the form shouldn't
+          scold anyone who is simply still working. It names the sections
+          rather than a bare count, and each name jumps to its first gap.
+          Capped in height so a screening barely started doesn't bury the
+          page under a list of all ten sections.
+        */}
+        {showGaps && !complete && (
+          <div
+            role="alert"
+            className="border-b border-msot-red/20 bg-msot-red/[.06]"
+          >
+            <div className="mx-auto max-w-2xl px-6 py-3">
+              <p className="text-sm font-semibold text-msot-red">
+                Not finished — {remaining.length} statement
+                {remaining.length > 1 ? "s" : ""} still to rate
+              </p>
+              <p className="mt-0.5 text-xs text-foreground/70">
+                Every statement must be rated before you can see results. The
+                sections below are outlined in red — tap one to jump there.
+              </p>
+              <div className="mt-2 flex max-h-24 flex-wrap gap-1.5 overflow-y-auto">
+                {missingSections.map((s) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    onClick={() => goToGap(s.firstId)}
+                    className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-msot-red ring-1 ring-inset ring-msot-red/40 transition-colors hover:bg-msot-red/10"
+                  >
+                    {s.label} ({s.count})
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-4 px-6 py-3">
           <div className="text-sm">
             <p className="text-foreground/70">
@@ -571,7 +656,7 @@ export default function ScreenPage() {
             {!complete && (
               <button
                 type="button"
-                onClick={goToFirstGap}
+                onClick={() => goToGap()}
                 className="text-msot-blue underline underline-offset-2 hover:text-msot-navy"
               >
                 {remaining.length} still to rate — show me
@@ -612,17 +697,27 @@ function PartHeading({
   eyebrow,
   title,
   caption,
+  missing = 0,
 }: {
   eyebrow: string;
   title: string;
   caption: string;
+  /** Unrated statements in this part — shown only once gaps are revealed. */
+  missing?: number;
 }) {
   return (
     <div className="mt-12">
       <p className="text-xs font-semibold uppercase tracking-[0.15em] text-msot-blue">
         {eyebrow}
       </p>
-      <h2 className="text-xl font-bold text-msot-navy">{title}</h2>
+      <div className="flex items-baseline gap-3">
+        <h2 className="flex-1 text-xl font-bold text-msot-navy">{title}</h2>
+        {missing > 0 && (
+          <span className="shrink-0 rounded-full bg-msot-red/10 px-2.5 py-1 text-xs font-semibold text-msot-red">
+            {missing} to rate
+          </span>
+        )}
+      </div>
       <p className="text-sm text-foreground/55">{caption}</p>
     </div>
   );
