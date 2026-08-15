@@ -17,7 +17,7 @@ export default function Home() {
             your care.
           </p>
           <p className="mt-4 text-lg leading-8 text-foreground/70">
-            Built on the foundation of 20 years of childhood occupational
+            Built on the foundation of 40 years of childhood occupational
             therapy.
           </p>
         </div>

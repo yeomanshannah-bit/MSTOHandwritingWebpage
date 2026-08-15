@@ -1,6 +1,38 @@
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
+import NavMenu, { type NavMenuItem } from "@/components/NavMenu";
+
+/*
+  The supporting reading, in the order it appears under "Learn More".
+
+  Two things are deliberately not in here. The model keeps its own pill — it
+  is the approach the whole site is built on. Screen a Student keeps its own
+  button because it is an action, not something to read: the bar shows what
+  you can *do*, and groups what you can read behind one pill.
+*/
+const learnItems: NavMenuItem[] = [
+  {
+    href: "/why-handwriting-matters",
+    label: "Why Handwriting Matters",
+    blurb: "The case for handwriting in a digital age.",
+  },
+  {
+    href: "/iceberg",
+    label: "The Iceberg",
+    blurb: "The eight foundations that sit beneath handwriting.",
+  },
+  {
+    href: "/the-evidence-base",
+    label: "The Evidence Base",
+    blurb: "The research behind the model.",
+  },
+  {
+    href: "/programs",
+    label: "Programs",
+    blurb: "A worked example of the tailored 10-week program.",
+  },
+];
 
 /*
   SiteHeader — the brand bar shown on every page. `Link` is Next.js's version
@@ -25,7 +57,13 @@ export default async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-black/[.06] bg-white/80 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+      {/*
+        Full-bleed rather than capped at the page's max-w-5xl: the logo sits
+        hard left and the nav hard right, using the whole width of the screen.
+        Padding grows on wider viewports so neither end is jammed against the
+        edge of the glass.
+      */}
+      <div className="flex w-full items-center justify-between gap-4 px-6 py-3 sm:px-8 lg:px-12">
         <Link href="/" className="flex items-center">
           <Image
             src="/brand/msot-logo.png"
@@ -37,13 +75,21 @@ export default async function SiteHeader() {
           />
         </Link>
 
-        <nav className="flex items-center gap-3 text-sm font-medium">
-          <Link href="/why-handwriting-matters" className={outlinePill}>
-            Why Handwriting Matters
+        {/* `flex-wrap` so a narrow window drops items onto a second row
+            instead of overflowing the bar. */}
+        <nav className="flex flex-wrap items-center justify-end gap-2 text-sm font-medium">
+          <Link href="/the-handwriting-model" className={outlinePill}>
+            The Handwriting Model
           </Link>
-          <Link href="/programs" className={outlinePill}>
-            Programs
-          </Link>
+          {/*
+            The supporting articles live behind one pill so the bar does not
+            grow a tab per page.
+          */}
+          <NavMenu
+            label="Learn More"
+            className={outlinePill}
+            items={learnItems}
+          />
           {/*
             Screen a Student points at the roster. Logged-out visitors are
             bounced to /login by the middleware, so this one link works for

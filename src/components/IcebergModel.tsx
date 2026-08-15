@@ -45,7 +45,19 @@ function Cloud({ className }: { className: string }) {
   );
 }
 
-export default function IcebergModel() {
+/*
+  `intro` and `cta` let the /iceberg page embed just the picture. That page
+  already carries its own title and closing call to action, so repeating the
+  component's heading and CTA there would say everything twice. The home page
+  passes neither prop and keeps the full block.
+*/
+export default function IcebergModel({
+  intro = true,
+  cta = true,
+}: {
+  intro?: boolean;
+  cta?: boolean;
+} = {}) {
   const [openId, setOpenId] = useState<string | null>(null);
   const open: Foundation | undefined = foundations.find((f) => f.id === openId);
   const openPos = open ? layout[open.id] : undefined;
@@ -61,18 +73,23 @@ export default function IcebergModel() {
     return () => window.removeEventListener("keydown", onKey);
   }, [openId]);
 
+  // `id` so other pages can deep-link straight to the iceberg via /#iceberg.
+  // `scroll-mt-24` keeps the heading clear of the sticky site header when the
+  // browser jumps here.
   return (
-    <section className="mt-24">
-      <div className="mx-auto max-w-2xl text-center">
-        <h2 className="text-3xl font-bold tracking-tight text-msot-navy">
-          Handwriting is the Tip of the Iceberg
-        </h2>
-        <p className="mt-3 text-lg leading-8 text-foreground/70">
-          On the surface we see poor handwriting. Beneath the surface are eight
-          foundations that impact a child&apos;s handwriting. Tap any foundation
-          to learn more.
-        </p>
-      </div>
+    <section id="iceberg" className="mt-24 scroll-mt-24">
+      {intro && (
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-msot-navy">
+            Handwriting is the Tip of the Iceberg
+          </h2>
+          <p className="mt-3 text-lg leading-8 text-foreground/70">
+            On the surface we see poor handwriting. Beneath the surface are
+            eight foundations that impact a child&apos;s handwriting. Tap any
+            foundation to learn more.
+          </p>
+        </div>
+      )}
 
       {/* The iceberg picture. The outer box does NOT clip, so speech bubbles
           can sit above the artwork; the inner box clips the scenery. */}
@@ -288,19 +305,23 @@ export default function IcebergModel() {
       </p>
 
       {/* Screener call-to-action */}
-      <div className="mx-auto mt-10 max-w-xl rounded-2xl bg-msot-blue p-8 text-center text-white">
-        <h3 className="text-2xl font-bold">See what&apos;s below the surface</h3>
-        <p className="mx-auto mt-2 max-w-md text-white/85">
-          Our screener checks each of these foundational skill areas and shows
-          you exactly where a student needs support.
-        </p>
-        <Link
-          href="/login"
-          className="mt-6 inline-flex rounded-full bg-white px-7 py-3 text-lg font-semibold text-msot-blue transition-transform hover:scale-[1.03]"
-        >
-          Screen a student →
-        </Link>
-      </div>
+      {cta && (
+        <div className="mx-auto mt-10 max-w-xl rounded-2xl bg-msot-blue p-8 text-center text-white">
+          <h3 className="text-2xl font-bold">
+            See what&apos;s below the surface
+          </h3>
+          <p className="mx-auto mt-2 max-w-md text-white/85">
+            Our screener checks each of these foundational skill areas and shows
+            you exactly where a student needs support.
+          </p>
+          <Link
+            href="/login"
+            className="mt-6 inline-flex rounded-full bg-white px-7 py-3 text-lg font-semibold text-msot-blue transition-transform hover:scale-[1.03]"
+          >
+            Screen a student →
+          </Link>
+        </div>
+      )}
 
     </section>
   );
