@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import ScreenAStudentLink from "@/components/ScreenAStudentLink";
 import { ArticleSections, type Section } from "@/components/ArticleBody";
 
 export const metadata: Metadata = {
@@ -516,12 +517,7 @@ export default function TheEvidenceBasePage() {
                 Work down the eight foundations and see where a student needs
                 support.
               </p>
-              <Link
-                href="/login"
-                className="mt-5 inline-flex rounded-full bg-msot-teal px-5 py-2.5 text-[15px] font-medium text-white transition-colors hover:brightness-95"
-              >
-                Screen a student →
-              </Link>
+              <ScreenAStudentLink />
             </div>
           </div>
         </aside>

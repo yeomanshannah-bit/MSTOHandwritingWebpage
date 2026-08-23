@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import ScreenAStudentLink from "@/components/ScreenAStudentLink";
 import { buildProgram, sessionCounts, MAX_DOMAINS } from "@/lib/programBuilder";
 import PaperPencilMark from "@/components/PaperPencilMark";
 import {
@@ -11,7 +11,7 @@ import {
 export const metadata: Metadata = {
   title: "Handwriting programs — Making Sense OT",
   description:
-    "A worked example of the tailored 10-week handwriting intervention program.",
+    "A worked example of the tailored 20-week handwriting intervention program.",
 };
 
 /*
@@ -46,11 +46,11 @@ export default function ProgramsPage() {
         Handwriting programs
       </p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight text-msot-navy sm:text-4xl">
-        A tailored 10-week program
+        A tailored 20-week program
       </h1>
       <p className="mt-4 text-lg leading-8 text-foreground/70">
         Once a student has been screened, their flagged foundations become a
-        weekly program: one short session a week, for ten weeks. Below is a
+        weekly program: one short session a week, for twenty weeks. Below is a
         worked example so you can see exactly what a teacher would receive.
       </p>
 
@@ -140,9 +140,9 @@ export default function ProgramsPage() {
         </div>
       </section>
 
-      {/* The ten weeks, shown as a screenshot rather than something to use */}
+      {/* The twenty weeks, shown as a screenshot rather than something to use */}
       <section className="mt-12">
-        <h2 className="text-xl font-bold text-msot-navy">The ten weeks</h2>
+        <h2 className="text-xl font-bold text-msot-navy">The twenty weeks</h2>
         <p className="mt-2 leading-7 text-foreground/70">
           Weeks unlock one at a time: each session opens only once the week
           before it has been completed, so the program is worked through as a
@@ -166,7 +166,7 @@ export default function ProgramsPage() {
                 <span className="h-2 w-2 rounded-full bg-msot-yellow" />
                 <span className="h-2 w-2 rounded-full bg-msot-teal/70" />
                 <span className="ml-2 truncate text-[10px] text-foreground/40">
-                  {demoStudent.initials} · 10-week program
+                  {demoStudent.initials} · 20-week program
                 </span>
               </div>
 
@@ -256,15 +256,10 @@ export default function ProgramsPage() {
           Screen a student now and build a program
         </h2>
         <p className="mt-2 max-w-lg leading-7 text-foreground/70">
-          Screen a student across the eight foundations and their 10-week
+          Screen a student across the eight foundations and their 20-week
           program is built from the areas that need support.
         </p>
-        <Link
-          href="/login"
-          className="mt-6 inline-flex rounded-full bg-msot-teal px-6 py-3 font-medium text-white transition-colors hover:brightness-95"
-        >
-          Screen a student →
-        </Link>
+        <ScreenAStudentLink className="mt-6" />
 
         <PaperPencilMark className="pointer-events-none absolute bottom-6 right-6 h-14 w-14" />
       </div>

@@ -90,7 +90,7 @@ export default async function StudentsPage() {
           <p className="text-lg font-medium text-msot-navy">No students yet</p>
           <p className="mx-auto mt-2 max-w-sm text-foreground/60">
             Add a student to screen them across the handwriting skill areas and
-            build their tailored 10-week program.
+            build their tailored 20-week program.
           </p>
           <Link
             href="/students/new"

@@ -13,12 +13,11 @@ export default function Home() {
           </h1>
           <p className="mt-5 text-lg leading-8 text-foreground/70">
             Evidence-based guidance on why handwriting matters, a screening
-            tool, and a tailored 10-week program to support the students in
+            tool, and a tailored 20-week program to support the students in
             your care.
           </p>
           <p className="mt-4 text-lg leading-8 text-foreground/70">
-            Built on the foundation of 40 years of childhood occupational
-            therapy.
+            Built on the foundation of 40 years of occupational therapy.
           </p>
         </div>
 
@@ -49,7 +48,7 @@ export default function Home() {
           accent="msot-teal"
           eyebrow="For school support staff"
           title="Screen a student"
-          body="Log in to screen a student across the foundational skill areas, then follow a personalised 10-week program."
+          body="Log in to screen a student across the foundational skill areas, then follow a personalised 20-week program."
           cta="Log in to start"
         />
       </section>

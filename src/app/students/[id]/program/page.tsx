@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   scoreScreening,
+  getForm,
   suggestLetters,
   type Responses,
   type Shapes,
@@ -39,7 +40,7 @@ function TimerIcon({ className = "" }: { className?: string }) {
 }
 
 /*
-  A student's 10-week program.
+  A student's 20-week program.
 
   If they have no program yet we offer to build one from their most recent
   screening. Once it exists, the weeks are shown as a timeline that unlocks one
@@ -96,7 +97,7 @@ export default async function StudentProgramPage({
 
     const { data: screening } = await supabase
       .from("screenings")
-      .select("id, responses")
+      .select("id, responses, form_id")
       .eq("student_id", id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -105,7 +106,10 @@ export default async function StudentProgramPage({
     // The screener's foundation ids ARE the program's domain ids, so the
     // flagged list feeds straight in — worst first.
     const flagged = screening
-      ? scoreScreening(screening.responses as Responses).flaggedFoundations
+      ? scoreScreening(
+          screening.responses as Responses,
+          getForm(screening.form_id as string | null),
+        ).flaggedFoundations
       : [];
     const domainIds = flagged.map((f) => f.id);
     const preview = buildProgram(domainIds);
@@ -136,7 +140,7 @@ export default async function StudentProgramPage({
       <div className="mx-auto max-w-2xl px-6 py-12">
         {backLink}
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-msot-navy">
-          10-week program
+          20-week program
         </h1>
 
         {!screening ? (
@@ -190,7 +194,7 @@ export default async function StudentProgramPage({
     Which letters to teach first, carried over from the screening's
     pre-writing shape check. It belongs here rather than on the results page:
     it isn't a finding about the child, it's the first teaching decision of
-    the program, so it opens the ten weeks.
+    the program, so it opens the twenty weeks.
   */
   const { data: sourceScreening } = program.screening_id
     ? await supabase
@@ -221,7 +225,7 @@ export default async function StudentProgramPage({
     <div className="mx-auto max-w-2xl px-6 py-12">
       {backLink}
 
-      <p className="mt-4 text-sm font-medium text-msot-blue">10-week program</p>
+      <p className="mt-4 text-sm font-medium text-msot-blue">20-week program</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight text-msot-navy">
         {student.initials} · {student.year_level}
       </h1>

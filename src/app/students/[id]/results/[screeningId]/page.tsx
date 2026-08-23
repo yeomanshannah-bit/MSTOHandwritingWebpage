@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import PaperPencilMark from "@/components/PaperPencilMark";
 import {
   scoreScreening,
+  getForm,
   statusLabel,
   closingNote,
   confidenceNote,
@@ -57,14 +58,17 @@ export default async function ResultsPage({
 
   const { data: screening } = await supabase
     .from("screenings")
-    .select("responses, reflection, created_at")
+    .select("responses, reflection, created_at, form_id")
     .eq("id", screeningId)
     .single();
 
   if (!student || !screening) notFound();
 
   // Recompute the summary from the stored answers (one source of truth).
-  const result = scoreScreening(screening.responses as Responses);
+  // Scoring needs the form these answers were given on — item ids differ
+  // between year levels.
+  const form = getForm(screening.form_id as string | null);
+  const result = scoreScreening(screening.responses as Responses, form);
   const {
     notice,
     foundations,
@@ -397,7 +401,7 @@ export default async function ResultsPage({
           Let&apos;s build {student.initials} a program
         </h2>
         <p className="mt-2 max-w-lg leading-7 text-foreground/70">
-          A self-paced 10-week program with strategies specific to your
+          A self-paced 20-week program with strategies specific to your
           student&apos;s needs.
         </p>
         <Link

@@ -1,9 +1,9 @@
 /*
-  Turns a screening result into a 10-week program.
+  Turns a screening result into a 20-week program.
 
   The tailoring is the SELECTION, not the content: we take the domains the
   screener flagged (worst first), keep the top few, then lay their sessions out
-  across ten weeks. The session wording itself comes from lib/programContent.ts
+  across twenty weeks. The session wording itself comes from lib/programContent.ts
   and is identical for every child.
 
   How the weeks are laid out: we rotate through the chosen domains, and each
@@ -18,7 +18,9 @@
       most practice where they need it most.
 
   With a single domain this degrades exactly to the source document: that
-  domain's weeks 1-10, in order.
+  domain's weeks 1-10, in order — and STOPS there, because ten sessions is all
+  the content a domain has. A one-domain program is therefore ten weeks long,
+  not twenty. Two or more domains fill all twenty weeks.
 */
 
 import {
@@ -27,15 +29,15 @@ import {
   type Session,
 } from "./programContent";
 
-/** A program runs for ten weekly sessions. */
-export const PROGRAM_WEEKS = 10;
+/** A program runs for twenty weekly sessions. */
+export const PROGRAM_WEEKS = 20;
 
 /** Most domains one program will draw on. More than this and the child is
     being asked to work on too much at once. */
 export const MAX_DOMAINS = 4;
 
 export type PlannedWeek = {
-  /** Week 1-10 of the program itself. */
+  /** Week 1-20 of the program itself. */
   week: number;
   domain: ProgramDomain;
   /** The session from that domain — note session.week is the week within the
@@ -73,7 +75,9 @@ export function buildProgram(
       const domain = domains[i % domains.length];
       const sessionIndex = Math.floor(i / domains.length);
       const session = domain.sessions[sessionIndex];
-      if (!session) break; // ran out of sessions (only possible if content shrinks)
+      // Ran out of sessions: a domain has ten, so a single-domain program
+      // ends at week ten rather than inventing content it does not have.
+      if (!session) break;
       weeks.push({ week: i + 1, domain, session });
     }
   }

@@ -5,7 +5,7 @@ import SessionDetail from "./SessionDetail";
 import type { Session } from "@/lib/programContent";
 
 /*
-  The 10-week program as a timeline.
+  The 20-week program as a timeline.
 
   Weeks unlock in order: week 1 is open from the start, and each later week
   stays locked until the one before it is marked complete. That's deliberate —
@@ -369,7 +369,7 @@ export default function ProgramTimeline({
       {completedCount === weeks.length && weeks.length > 0 && (
         <div className="mt-4 rounded-2xl bg-msot-teal/10 px-6 py-5 text-center">
           <p className="text-lg font-bold text-msot-navy">
-            All ten weeks complete 🎉
+            All twenty weeks complete 🎉
           </p>
           <p className="mt-1 leading-7 text-foreground/75">
             Time for the end-of-program reflection below.

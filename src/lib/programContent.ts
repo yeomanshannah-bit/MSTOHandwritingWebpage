@@ -1,5 +1,5 @@
 /*
-  The 10-week intervention program content, extracted from
+  The intervention program content, extracted from
   Content/Interventions/"Example of 1 10 week program.docx".
 
   This is an authored CONTENT LIBRARY, not per-student data: eight domains x
@@ -14,7 +14,7 @@
 export const CONTENT_VERSION = 1;
 
 export type Session = {
-  /** Week number within this domain's own 10-week progression. */
+  /** Week number within this domain's own ten-session progression. */
   week: number;
   title: string;
   youNeed: string;
@@ -74,7 +74,7 @@ export const philosophy = {
 };
 
 export const howToUse =
-  "We recommend you complete one session each week for 10 weeks. Activities can be repeated more than once within the same week. The order we have built is based on your student's areas of challenge identified in the screener, and will provide tailored progressions.";
+  "We recommend you complete one session each week for 20 weeks. Activities can be repeated more than once within the same week. The order we have built is based on your student's areas of challenge identified in the screener, and will provide tailored progressions.";
 
 export const safetyPrinciples = [
   "Use the child\u2019s school-approved letter style and the same short formation language across adults.",

@@ -1,70 +1,110 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import ScreenAStudentLink from "@/components/ScreenAStudentLink";
 import Image from "next/image";
+import { ArticleSections, type Section } from "@/components/ArticleBody";
 
 export const metadata: Metadata = {
-  title: "Why handwriting matters in a digital age — Making Sense OT",
+  title: "Why handwriting still matters in a digital age — Making Sense OT",
   description:
-    "Screens are everywhere and handwriting still matters. The case for it: academic benefits, brain and memory, literacy links, and confidence.",
+    "Children will type most of the words they ever write. The case for handwriting anyway: how forming letters builds literacy, and when to reach for a keyboard instead.",
 };
 
 /*
-  A long-form article rather than the previous accordion. Handwriting is the
-  argument this page has to make, and an argument reads better as continuous
-  prose than as four collapsed boxes a reader has to opt into.
+  Ported from Content/Why handwriting matters digital age.docx.
 
-  The words live in `article` as data so copy can be edited without touching
-  layout. Each section is a heading plus paragraphs; `pullQuote` optionally
-  lifts one line out after the section.
+  This article and /the-handwriting-model were split apart in Aug 2026: the
+  general case for handwriting lives here, and the model page is now only the
+  model. Words live in `article` as data so the copy can be edited without
+  touching layout; the block types live in components/ArticleBody, shared with
+  the model and iceberg pages.
 */
-const article: {
-  heading: string;
-  paragraphs: string[];
-  pullQuote?: string;
-}[] = [
+const article: Section[] = [
   {
-    heading: "The skill that makes room for thinking",
-    paragraphs: [
-      "There is a moment, somewhere in the first years of school, when handwriting stops being the task and becomes the tool. Before that moment, forming an 'a' is the whole job — the child is thinking about where the pencil starts, which way the curve goes, how hard to press. After it, the letters simply arrive, and the child is free to think about what they actually want to say.",
-      "Everything in this article turns on that shift. Children who develop strong handwriting skills are better able to focus on the content of their writing rather than the mechanics, and that frees up cognitive resources for higher-order thinking, creativity, and expression. Attention is finite. Every scrap of it spent on letter formation is a scrap not spent on the idea.",
-      "This is why fluent writers tend to produce longer, richer written work than children who struggle with the physical act of writing. It is rarely that they have more to say. It is that less of what they have to say is lost on the way to the page.",
-    ],
-    pullQuote:
-      "When handwriting becomes automatic, a child stops thinking about how to write and starts thinking about what to write.",
-  },
-  {
-    heading: "What the hand teaches the brain",
-    paragraphs: [
-      "The most common argument against handwriting is that a keyboard does the same job faster. For getting words onto a screen, that is often true. For building the brain that produces the words, it is not.",
-      "When children write by hand, they engage regions of the brain linked to reading, memory, and language processing — and typing does not activate those same regions to the same degree. The difference appears to lie in the movement itself. Every letter formed by hand is a small, specific motor sequence, different from every other letter, produced by the child rather than selected from a keyboard.",
-      "Typing collapses that variety. The motor act of pressing 'b' is identical to the motor act of pressing 'd' — same finger movement, different location. By hand, 'b' and 'd' are genuinely different journeys, and that difference is exactly what a child who confuses them needs to feel.",
-      "So handwriting practice is not really about penmanship. It is a cognitive activity that helps build the brain's literacy networks, and the child is doing far more than making the page look tidy.",
+    heading: "Handwriting is part of how children learn to read and write",
+    blocks: [
+      {
+        kind: "p",
+        text: "Learning to form letters is not simply an old-fashioned way of recording words. It is part of how children develop literacy itself.",
+      },
+      {
+        kind: "p",
+        text: "When a child writes a letter by hand, the brain coordinates vision, movement, touch, attention and memory all at once. The child must recall the letter's shape, decide where to begin, plan the direction of movement and monitor what appears on the page. At the same time, they are learning to connect that shape with the letter's name and its sound.",
+      },
+      {
+        kind: "p",
+        text: "Pressing a key is also a valuable skill, but it is a different learning experience. Every handwritten letter has its own movement pattern. Forming a b and forming a d, for example, require different starting points and different movements. Feeling and producing those differences helps children build stronger, more detailed knowledge of letters. A keyboard, by contrast, makes every letter the same physical action.",
+      },
     ],
   },
   {
-    heading: "Handwriting and reading are the same story",
-    paragraphs: [
-      "Teachers often treat handwriting and reading as separate parts of the timetable. Children's brains do not.",
-      "Forming a letter by hand reinforces the link between the letter's shape, its name, and its sound — the three-way connection that phonological awareness is built on. A child who has drawn the letter has encoded it in a way that recognising it on a screen does not replicate. This is why explicit handwriting instruction tends to show up as improvement not only in writing, but in reading and spelling too.",
-      "The relationship runs in the difficult direction as well. Children who struggle with handwriting frequently also experience difficulties with reading and written expression. That co-occurrence is one of the strongest practical arguments for looking closely and early: handwriting is visible in a way that a quiet reading difficulty often is not, which makes it a useful early signal that something underneath needs support.",
+    heading: "The right tool for the moment",
+    blocks: [
+      {
+        kind: "p",
+        text: "Handwriting, keyboarding and assistive technology all have an important place in modern education. The real question is not whether classrooms should use paper or screens. It is:",
+      },
+      {
+        kind: "quote",
+        text: "Which tool will best support the learning taking place at this moment?",
+      },
+      {
+        kind: "p",
+        text: "For a child learning letter shapes, sounds and spelling patterns, pencil and paper may offer an essential physical learning experience. For drafting, editing, researching or reducing the load of extended written work, technology may be exactly the right choice. A balanced classroom protects opportunities for both.",
+      },
     ],
   },
   {
-    heading: "The cost that does not show up in the marking",
-    paragraphs: [
-      "Ask a teacher about a child with handwriting difficulties and they will usually describe the work. Ask the child, and you tend to hear about something else entirely.",
-      "When writing is slow, effortful, or produces results the child can see are messier than everyone else's, the response is rarely to try harder. It is to write less. Children avoid writing tasks, produce the shortest acceptable answer, volunteer for anything that isn't writing, or become frustrated and disengage from the lesson altogether. The work that gets handed in understates what the child knows, and over time both the teacher's expectations and the child's own quietly adjust downward.",
-      "That is the real damage — not untidy books, but a child who has concluded that writing is something they are bad at, and who arranges their school life around avoiding it. Developing fluent, automatic handwriting removes that barrier and lets children participate fully and confidently in the classroom.",
+    heading: "When handwriting becomes a tool for thinking",
+    blocks: [
+      {
+        kind: "p",
+        text: "In the early stages of learning, handwriting demands real mental effort. A beginning writer may be juggling all of this at once:",
+      },
+      {
+        kind: "list",
+        items: [
+          "Where do I start this letter?",
+          "Which direction does it go?",
+          "How do I hold my pencil?",
+          "Does it sit on the line?",
+          "What sound am I writing?",
+          "What was I trying to say?",
+        ],
+      },
+      {
+        kind: "p",
+        text: "Attention and working memory are limited. If a child must pour most of that capacity into forming individual letters, there is little left for spelling, vocabulary, sentence construction and organising ideas.",
+      },
+      {
+        kind: "p",
+        text: "With explicit teaching and purposeful practice, letter formation gradually becomes more automatic. The child no longer plans every movement consciously, and handwriting shifts from being the task itself to becoming a tool for learning and communication.",
+      },
+      {
+        kind: "quote",
+        text: "When handwriting becomes automatic, children can stop thinking so much about how to write and start thinking about what they want to say.",
+      },
+      {
+        kind: "p",
+        text: "This is one reason children with slow or effortful handwriting often produce far less on the page than they can explain out loud. They do not have fewer ideas. Too many of those ideas are simply lost while they wrestle with the physical and mental demands of getting them down.",
+      },
     ],
-    pullQuote:
-      "The lasting cost of handwriting difficulty is rarely the handwriting. It is a child who stops putting their ideas on the page at all.",
   },
   {
-    heading: "So what does this mean in a digital classroom?",
-    paragraphs: [
-      "None of this is an argument against technology. Children will type most of the words they ever write, assistive tools are genuinely liberating for some students, and no one benefits from nostalgia about fountain pens.",
-      "The argument is narrower and harder to dismiss: the years in which handwriting builds literacy are the primary years, and they do not come back. A child who reaches the end of primary school without automatic handwriting has not simply missed a skill — they have spent several years doing their thinking with less attention available for it than their classmates had.",
-      "Which is why, when a child's handwriting is a struggle, the useful question is not how to make the letters neater. It is what, underneath, is making writing so hard — and that is what the screener on this site is for.",
+    heading: "Balance, not either-or",
+    blocks: [
+      {
+        kind: "p",
+        text: "Predictions that technology would make handwriting obsolete have not held up. Instead, we are learning that handwriting and technology serve different purposes, and that children are best served when they have access to both at the right times.",
+      },
+      {
+        kind: "p",
+        text: "Protecting handwriting is not about returning education to the past or resisting useful tools. It is about recognising that forming letters by hand is one of the ways children come to understand written language — and making sure that important learning experience is not lost in the rush to go digital.",
+      },
+      {
+        kind: "quote",
+        text: "The goal has never been perfect penmanship. It is to help handwriting become a comfortable, efficient tool that lets children participate, express their ideas and show what they truly know.",
+      },
     ],
   },
 ];
@@ -78,7 +118,7 @@ export default function WhyHandwritingMattersPage() {
           Free education · No account needed
         </p>
         <h1 className="mt-3 text-4xl font-bold leading-tight tracking-tight text-msot-navy sm:text-[2.75rem]">
-          Why handwriting matters in a digital age
+          Why handwriting still matters in a digital age
         </h1>
 
         <div className="mt-5 flex items-center gap-3 text-sm text-foreground/60">
@@ -86,7 +126,7 @@ export default function WhyHandwritingMattersPage() {
           <span aria-hidden className="text-foreground/25">
             |
           </span>
-          <span>8 min read</span>
+          <span>5 min read</span>
         </div>
       </header>
 
@@ -104,11 +144,22 @@ export default function WhyHandwritingMattersPage() {
 
       {/* --- lede --- */}
       <p className="mt-10 max-w-3xl text-xl leading-9 text-foreground/80">
-        Children today will type most of the words they ever write. It is a fair
-        question, then, why handwriting should still take up so much of the
-        primary school day. The answer is that handwriting was never only a way
-        of recording words — it is one of the ways children learn to read,
-        remember, and think.
+        For many years, some people predicted that handwriting would fade in
+        importance as computers, tablets and voice technology became part of
+        everyday life. Why spend valuable classroom time on letter formation
+        when children today will almost certainly type more words across their
+        lifetime than they will ever write by hand?
+      </p>
+
+      <p className="mt-6 max-w-3xl text-lg leading-8 text-foreground/75">
+        It is a fair question. But recent research and educational trends point
+        to a clear answer: handwriting remains an important foundation for
+        literacy, learning and academic participation. Several countries,
+        including Sweden, have recently renewed their focus on printed books,
+        handwriting and explicit literacy instruction after concerns about
+        falling student outcomes. This does not mean technology is unhelpful. It
+        highlights the importance of finding the right balance between
+        traditional and digital learning.
       </p>
 
       {/*
@@ -119,26 +170,7 @@ export default function WhyHandwritingMattersPage() {
       */}
       <div className="mt-16 lg:grid lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-14">
         <div className="max-w-3xl">
-          {article.map((section, i) => (
-            <section key={section.heading} className={i === 0 ? "" : "mt-12"}>
-              <h2 className="text-2xl font-bold tracking-tight text-msot-navy">
-                {section.heading}
-              </h2>
-              {section.paragraphs.map((p) => (
-                <p
-                  key={p.slice(0, 40)}
-                  className="mt-5 text-lg leading-8 text-foreground/75"
-                >
-                  {p}
-                </p>
-              ))}
-              {section.pullQuote && (
-                <blockquote className="mt-8 border-l-4 border-msot-cyan pl-6 text-xl font-medium leading-9 text-msot-navy">
-                  {section.pullQuote}
-                </blockquote>
-              )}
-            </section>
-          ))}
+          <ArticleSections sections={article} />
         </div>
 
         {/*
@@ -153,22 +185,34 @@ export default function WhyHandwritingMattersPage() {
       */}
         <aside className="mt-16 lg:mt-0">
           {/* top-24 clears the sticky site header (~65px) plus breathing room */}
-          <div className="lg:sticky lg:top-24">
+          <div className="lg:sticky lg:top-24 space-y-4">
+            <div className="rounded-2xl border border-msot-blue/25 bg-msot-blue/[.06] p-6">
+              <h2 className="text-lg font-semibold leading-snug text-msot-navy">
+                How the model works
+              </h2>
+              <p className="mt-2 text-[15px] leading-7 text-foreground/70">
+                Support the foundations that make writing possible, and
+                explicitly teach handwriting itself — meeting each child where
+                they are.
+              </p>
+              <Link
+                href="/the-handwriting-model"
+                className="mt-5 inline-flex rounded-full bg-msot-blue px-5 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-msot-navy"
+              >
+                Read the model →
+              </Link>
+            </div>
+
             <div className="rounded-2xl border border-msot-teal/25 bg-msot-teal/[.06] p-6">
               <h2 className="text-lg font-semibold leading-snug text-msot-navy">
                 Concerned about a particular student?
               </h2>
               <p className="mt-2 text-[15px] leading-7 text-foreground/70">
                 Our screening tool checks the eight foundations that sit beneath
-                handwriting and builds a tailored 10-week program around what it
+                handwriting and builds a tailored 20-week program around what it
                 finds.
               </p>
-              <Link
-                href="/login"
-                className="mt-5 inline-flex rounded-full bg-msot-teal px-5 py-2.5 text-[15px] font-medium text-white transition-colors hover:brightness-95"
-              >
-                Screen a student →
-              </Link>
+              <ScreenAStudentLink />
             </div>
           </div>
         </aside>

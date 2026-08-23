@@ -30,7 +30,7 @@ const learnItems: NavMenuItem[] = [
   {
     href: "/programs",
     label: "Programs",
-    blurb: "A worked example of the tailored 10-week program.",
+    blurb: "A worked example of the tailored 20-week program.",
   },
 ];
 

@@ -53,27 +53,57 @@ function items(prefix: string, labels: string[]): Item[] {
   return labels.map((label, i) => ({ id: `${prefix}-${i + 1}`, label }));
 }
 
+/*
+  Year 2 asks more statements than Year 1 and, in Visual-Motor Integration,
+  adds one at the TOP of the list. If both forms numbered their items the same
+  way, "visual-motor-integration-1" would mean a different statement depending
+  on which form was used — and a saved screening is just a map of item id to
+  rating, so old records would silently be read against the wrong statements.
+  Year 2 ids therefore carry a prefix. Year 1 keeps its bare ids exactly as
+  they were, so every screening saved before this change still scores.
+*/
+const ITEM_PREFIX = { "year-1": "", "year-2": "y2-" } as const;
+
 // ── Guidance shown at the top ────────────────────────────────────
-
-export const senseIntro =
-  "Hi, I'm Sense. Handwriting sits at the tip of an iceberg. This tool mirrors the iceberg exactly — first we notice whether handwriting is affecting participation, then we look underneath at the eight foundations, and we keep an eye on how the child feels about writing. Let's make sense of it together.";
-
 // One statement rather than two: the screener already asks a lot of a
 // teacher before they rate anything, so the framing is kept to a single
-// paragraph they can take in at a glance.
-export const ratingGuidance =
+// paragraph they can take in at a glance. Each form carries its own, because
+// what counts as age-appropriate is exactly what changes between years.
+
+const year1Guidance =
   "Rate each statement on what you have noticed across several classroom activities. Rate against typical Year 1 expectations. Please note letter reversals remain developmentally normal until approximately 7 years of age.";
 
-export const curriculumAnchor = "AC9E1LY08";
+const year1Anchor = "AC9E1LY08";
+const year2Anchor = "AC9E2LY08";
+
+const year2Guidance =
+  "Rate each statement on what you have noticed across several classroom activities, not a single difficult writing lesson. Rate against typical Year 2 expectations (the third year of school), where legible, unjoined upper- and lower-case letters with growing fluency and speed are expected. By this stage letter reversals should be resolving — flag the reversal item only if reversals are frequent or persistent.";
 
 // ── PART 1 · NOTICE — the tip of the iceberg ─────────────────────
 
-export const noticeItems: Item[] = items("notice", [
+const year1Notice: Item[] = items("notice", [
   "The child's handwriting is difficult to read.",
   "Letters are formed incorrectly or inconsistently.",
   "Letter size, spacing or placement on the line is inconsistent.",
   "Writing is noticeably slower or more effortful than expected.",
   "The child has difficulty completing an appropriate amount of written work.",
+  "Handwriting quality deteriorates as the task continues.",
+  "The child reports hand pain, discomfort or tiredness.",
+  "The child avoids, resists or becomes distressed by writing.",
+]);
+
+/*
+  Year 2 differs in two statements: slowness is judged against the child's own
+  ideas rather than in the abstract, and the amount of work is judged against
+  the time available. Both reflect the Year 2 expectation of growing fluency
+  and speed.
+*/
+const year2Notice: Item[] = items("y2-notice", [
+  "The child's handwriting is difficult to read.",
+  "Letters are formed incorrectly or inconsistently.",
+  "Letter size, spacing or placement on the line is inconsistent.",
+  "Writing is noticeably slower or more effortful than expected, and does not keep pace with the child's ideas.",
+  "The child has difficulty completing an appropriate amount of written work in the time available.",
   "Handwriting quality deteriorates as the task continues.",
   "The child reports hand pain, discomfort or tiredness.",
   "The child avoids, resists or becomes distressed by writing.",
@@ -86,19 +116,36 @@ export type Foundation = {
   /** 1-8, matching the numbering on the iceberg. */
   number: number;
   title: string;
-  /** Optional line shown under the heading (e.g. a curriculum anchor). */
+  /** Optional line shown under the heading. */
   note?: string;
+  /** Optional Australian Curriculum code, rendered before the note. */
+  anchor?: string;
   items: Item[];
 };
 
+/*
+  `id` is the domain id, shared across every form — programContent.ts and
+  programBuilder.ts look sessions up by it, so a foundation flagged on the
+  Year 2 form builds the same program as one flagged on Year 1. Only the
+  ITEM ids are namespaced per form.
+*/
 function foundation(
+  form: FormId,
   number: number,
   id: string,
   title: string,
   labels: string[],
   note?: string,
+  anchor?: string,
 ): Foundation {
-  return { id, number, title, note, items: items(id, labels) };
+  return {
+    id,
+    number,
+    title,
+    note,
+    anchor,
+    items: items(`${ITEM_PREFIX[form]}${id}`, labels),
+  };
 }
 
 /**
@@ -107,53 +154,147 @@ function foundation(
  * a flagged foundation here looks up its program sessions by the same id, so
  * they must never drift apart.
  */
-export const foundations: Foundation[] = [
-  foundation(1, "postural-control", "Postural Control", [
+const year1Foundations: Foundation[] = [
+  foundation("year-1", 1, "postural-control", "Postural Control", [
     "The child slumps, leans heavily on the desk or supports their head while writing.",
     "The child has difficulty keeping their feet and body stable.",
     "The child frequently changes position or leaves their seat during writing.",
     "The child appears physically tired during longer writing activities.",
   ]),
-  foundation(2, "bilateral-coordination", "Bilateral Coordination", [
+  foundation("year-1", 2, "bilateral-coordination", "Bilateral Coordination", [
     "The child does not consistently use their other hand to hold the paper.",
     "The child frequently swaps the pencil between hands.",
     "The child has difficulty moving smoothly across the page from left to right.",
     "The child also finds two-handed classroom activities, such as cutting, ruling or opening containers, difficult.",
   ]),
-  foundation(3, "fine-motor-control", "Fine Motor Control", [
+  foundation("year-1", 3, "fine-motor-control", "Fine Motor Control", [
     "The child has difficulty making small, controlled pencil movements.",
     "The child holds the pencil very tightly, awkwardly or with more fingers than appear necessary for control.",
     "The child presses extremely hard or produces marks that are unusually faint.",
     "The child's hand becomes tired, sore or shaky during writing.",
     "Letter formation and pencil control deteriorate as the task continues.",
   ]),
-  foundation(4, "sensory-regulation", "Sensory Regulation & Body Awareness", [
+  foundation("year-1", 4, "sensory-regulation", "Sensory Regulation & Body Awareness", [
     "The child has difficulty settling their body and becoming ready to write.",
     "The child is easily distracted or distressed by ordinary classroom noise, touch or movement.",
     "The child frequently seeks movement, pressure or tactile input during writing.",
     "The child appears unaware of how much pressure they are using with the pencil.",
   ]),
-  foundation(5, "visual-perception", "Visual Perception", [
+  foundation("year-1", 5, "visual-perception", "Visual Perception", [
     "The child confuses letters or shapes that look similar.",
     "The child frequently reverses letters beyond what would be expected for their age and stage of learning.",
     "The child has difficulty judging spaces between letters or words.",
     "The child loses their place when reading, copying or moving across a worksheet.",
     "The child has difficulty remembering the visual appearance of familiar letters.",
   ]),
-  foundation(6, "visual-motor-integration", "Visual-Motor Integration", [
+  foundation("year-1", 6, "visual-motor-integration", "Visual-Motor Integration", [
     "The child has difficulty copying simple patterns, drawings or letters.",
     "Letters are uneven in size or poorly positioned on the writing line.",
     "The child finds copying from the board more difficult than copying from a nearby model.",
     "What the child produces on paper does not closely resemble the model, even when they appear to understand the task.",
   ]),
-  foundation(7, "attention-executive-function", "Attention & Executive Function", [
+  foundation("year-1", 7, "attention-executive-function", "Attention & Executive Function", [
     "The child has difficulty beginning a writing task, even when they understand what to do.",
     "The child loses focus before completing a short, appropriate writing activity.",
     "The child forgets instructions or loses track of the next step.",
     "The child has difficulty organising their materials, ideas or space on the page.",
     "The child becomes overwhelmed when required to think of ideas, spell and form letters at the same time.",
   ]),
+  foundation("year-1", 8,
+    "language-letter-knowledge",
+    "Language & Letter Knowledge",
+    [
+      "The child has difficulty understanding the language used in writing instructions.",
+      "The child has difficulty expressing their idea verbally before writing.",
+      "The child does not consistently recognise or name letters expected for their stage of learning.",
+      "The child has difficulty connecting letters with their corresponding sounds.",
+      "The child cannot readily recall how to form familiar letters without copying a model.",
+    ],
+    "write words using unjoined lower-case and upper-case letters",
+    year1Anchor,
+  ),
+];
+
+/*
+  Year 2. The eight foundations and their domain ids are identical — what
+  changes is the statements. Four foundations gain a fifth statement that only
+  makes sense once a child has had another year of writing:
+    1 · shoulder rather than finger movement
+    2 · turning the body or paper instead of reaching across it
+    4 · not noticing discomfort or fatigue
+    6 · copying pre-writing shapes, listed FIRST because it is the most basic
+        check in that foundation and reads oddly anywhere else
+*/
+const year2Foundations: Foundation[] = [
+  foundation("year-2", 1, "postural-control", "Postural Control", [
+    "The child slumps, leans heavily on the desk or supports their head while writing.",
+    "The child has difficulty keeping their feet and body stable.",
+    "The child frequently changes position or leaves their seat during writing.",
+    "The child appears physically tired during longer writing activities.",
+    "The child uses large movements from the shoulder rather than controlled movements of the hand and fingers.",
+  ]),
+  foundation("year-2", 2, "bilateral-coordination", "Bilateral Coordination", [
+    "The child does not consistently use their other hand to hold or steady the paper.",
+    "The child frequently swaps the pencil between hands.",
+    "The child turns their body or paper excessively instead of reaching across the page.",
+    "The child has difficulty moving smoothly across the page from left to right.",
+    "The child also finds two-handed classroom activities, such as cutting, ruling or opening containers, difficult.",
+  ]),
+  foundation("year-2", 3, "fine-motor-control", "Fine Motor Control", [
+    "The child has difficulty making small, controlled pencil movements.",
+    "The child holds the pencil very tightly, awkwardly or with more fingers than appear necessary for control.",
+    "The child presses extremely hard or produces marks that are unusually faint.",
+    "The child's hand becomes tired, sore or shaky during writing.",
+    "Letter formation and pencil control deteriorate as the task continues.",
+  ]),
   foundation(
+    "year-2",
+    4,
+    "sensory-regulation",
+    "Sensory Regulation & Body Awareness",
+    [
+      "The child has difficulty settling their body and becoming ready to write.",
+      "The child is easily distracted or distressed by ordinary classroom noise, touch or movement.",
+      "The child frequently seeks movement, pressure or tactile input during writing.",
+      "The child appears unaware of how much pressure they are using with the pencil.",
+      "The child does not readily notice when their position is uncomfortable or their hand is becoming tired.",
+    ],
+  ),
+  foundation("year-2", 5, "visual-perception", "Visual Perception", [
+    "The child confuses letters or shapes that look similar.",
+    "The child frequently reverses letters beyond what would be expected for their age and stage of learning.",
+    "The child has difficulty judging spaces between letters or words.",
+    "The child loses their place when reading, copying or moving across a worksheet.",
+    "The child has difficulty remembering the visual appearance of familiar letters.",
+  ]),
+  foundation(
+    "year-2",
+    6,
+    "visual-motor-integration",
+    "Visual-Motor Integration",
+    [
+      "The child has difficulty copying pre-writing shapes expected for their developmental level.",
+      "The child has difficulty copying simple patterns, drawings or letters.",
+      "Letters are uneven in size or poorly positioned on the writing line.",
+      "The child finds copying from the board more difficult than copying from a nearby model.",
+      "What the child produces on paper does not closely resemble the model, even when they appear to understand the task.",
+    ],
+  ),
+  foundation(
+    "year-2",
+    7,
+    "attention-executive-function",
+    "Attention & Executive Function",
+    [
+      "The child has difficulty beginning a writing task, even when they understand what to do.",
+      "The child loses focus before completing a short, appropriate writing activity.",
+      "The child forgets instructions or loses track of the next step.",
+      "The child has difficulty organising their materials, ideas or space on the page.",
+      "The child becomes overwhelmed when required to think of ideas, spell and form letters at the same time.",
+    ],
+  ),
+  foundation(
+    "year-2",
     8,
     "language-letter-knowledge",
     "Language & Letter Knowledge",
@@ -164,6 +305,8 @@ export const foundations: Foundation[] = [
       "The child has difficulty connecting letters with their corresponding sounds.",
       "The child cannot readily recall how to form familiar letters without copying a model.",
     ],
+    "write words legibly and with growing fluency using unjoined upper-case and lower-case letters",
+    year2Anchor,
   ),
 ];
 
@@ -205,8 +348,11 @@ export const preWritingShapes: PreWritingShape[] = [
   { id: "diamond", label: "Diamond" },
 ];
 
-export const shapeCheckIntro =
+const year1ShapeIntro =
   "Ask the child to copy each shape. This helps decide which letters to introduce first — the shapes are the movements that build letters.";
+
+const year2ShapeIntro =
+  "Ask the child to copy each shape. By Year 2 most children copy these easily — if letters are still poorly formed, this confirms the underlying movements are secure and helps decide which letters to revisit first.";
 
 export const shapeCheckHint =
   "Rate at least the vertical, horizontal and circle shapes and Sense will suggest which letters to introduce first.";
@@ -269,13 +415,19 @@ export function suggestLetters(shapes: Shapes): {
 
 // ── PART 3 · CONFIDENCE ──────────────────────────────────────────
 
-export const confidenceItems: Item[] = items("confidence", [
+const confidenceLabels = [
   "The child says things such as “I can't write” or “I'm bad at writing.”",
   "The child avoids or resists writing activities.",
   "The child becomes anxious, upset or frustrated when asked to write.",
   "The child gives up quickly or requires frequent reassurance.",
   "The child participates more successfully when the amount, time pressure or copying demand is reduced.",
-]);
+];
+
+// Identical wording in both forms — how a child feels about writing doesn't
+// change with the year level. Only the ids differ, so each form's answers
+// stay distinguishable.
+const year1Confidence: Item[] = items("confidence", confidenceLabels);
+const year2Confidence: Item[] = items("y2-confidence", confidenceLabels);
 
 export const confidenceNote =
   "Emotional distress is often a consequence of handwriting being persistently difficult, rather than the original cause.";
@@ -288,20 +440,101 @@ export const confidenceNote =
 export const closingNote =
   "A foundation difficulty should guide the support provided — but it should not delay explicit letter teaching and actual handwriting practice. This is a teacher screening tool, not a standardised assessment, so it does not produce a diagnostic total score.";
 
-// ── Item id helpers ──────────────────────────────────────────────
+// ── The forms ────────────────────────────────────────────────────
 
-export const noticeItemIds = noticeItems.map((i) => i.id);
-export const foundationItemIds = foundations.flatMap((f) =>
-  f.items.map((i) => i.id),
+export type FormId = "year-1" | "year-2";
+
+/*
+  One screener form. Everything that differs between year levels lives here;
+  everything shared (the rating scale, the shape list, the scoring rules, the
+  eight domain ids) stays outside it.
+*/
+export type ScreenerForm = {
+  id: FormId;
+  /** Shown on the picker and on the saved results. */
+  label: string;
+  /** One line on the picker, so the teacher can tell them apart. */
+  blurb: string;
+  ratingGuidance: string;
+  curriculumAnchor: string;
+  shapeCheckIntro: string;
+  noticeItems: Item[];
+  foundations: Foundation[];
+  confidenceItems: Item[];
+  noticeItemIds: string[];
+  confidenceItemIds: string[];
+  /** Everything rated on the frequency scale, in the order it appears. */
+  allItemIds: string[];
+};
+
+function buildForm(
+  id: FormId,
+  label: string,
+  blurb: string,
+  ratingGuidance: string,
+  curriculumAnchor: string,
+  shapeCheckIntro: string,
+  noticeItems: Item[],
+  foundations: Foundation[],
+  confidenceItems: Item[],
+): ScreenerForm {
+  const noticeItemIds = noticeItems.map((i) => i.id);
+  const confidenceItemIds = confidenceItems.map((i) => i.id);
+  return {
+    id,
+    label,
+    blurb,
+    ratingGuidance,
+    curriculumAnchor,
+    shapeCheckIntro,
+    noticeItems,
+    foundations,
+    confidenceItems,
+    noticeItemIds,
+    confidenceItemIds,
+    allItemIds: [
+      ...noticeItemIds,
+      ...foundations.flatMap((f) => f.items.map((i) => i.id)),
+      ...confidenceItemIds,
+    ],
+  };
+}
+
+export const year1Form = buildForm(
+  "year-1",
+  "Year 1",
+  "The second year of school. Letter reversals are still developmentally normal.",
+  year1Guidance,
+  year1Anchor,
+  year1ShapeIntro,
+  year1Notice,
+  year1Foundations,
+  year1Confidence,
 );
-export const confidenceItemIds = confidenceItems.map((i) => i.id);
 
-/** Everything rated on the frequency scale, in the order it appears. */
-export const allItemIds = [
-  ...noticeItemIds,
-  ...foundationItemIds,
-  ...confidenceItemIds,
-];
+export const year2Form = buildForm(
+  "year-2",
+  "Year 2",
+  "The third year of school. Legible unjoined letters with growing fluency and speed are expected.",
+  year2Guidance,
+  year2Anchor,
+  year2ShapeIntro,
+  year2Notice,
+  year2Foundations,
+  year2Confidence,
+);
+
+/** Every form a teacher can choose, in the order they appear on the picker. */
+export const screenerForms: ScreenerForm[] = [year1Form, year2Form];
+
+/**
+ * The form a saved screening was completed on. Screenings written before Year 2
+ * existed carry no form id, and every one of them was the Year 1 form — so an
+ * unknown or missing value falls back to Year 1 rather than failing to render.
+ */
+export function getForm(id: string | null | undefined): ScreenerForm {
+  return screenerForms.find((f) => f.id === id) ?? year1Form;
+}
 
 // ── Scoring ──────────────────────────────────────────────────────
 
@@ -449,10 +682,22 @@ function tally(ids: string[], responses: Responses) {
 /**
  * Turn raw responses into per-part scores and the list of foundations that
  * need support. Flagged foundations are ordered worst-first (most "often",
- * then most "sometimes"). No year-level adjustment yet — treated as Year 1.
+ * then most "sometimes").
+ *
+ * `form` must be the form the screening was actually completed on — the item
+ * ids differ between forms, so scoring Year 2 answers against the Year 1 form
+ * would find nothing. Callers reading a saved screening should pass
+ * `getForm(screening.form_id)`.
+ *
+ * The thresholds themselves are deliberately identical across forms: what
+ * changes with the year level is what a teacher is rating against, not where
+ * the line for "needs support" sits.
  */
-export function scoreScreening(responses: Responses): ScreeningResult {
-  const n = tally(noticeItemIds, responses);
+export function scoreScreening(
+  responses: Responses,
+  form: ScreenerForm = year1Form,
+): ScreeningResult {
+  const n = tally(form.noticeItemIds, responses);
   const notice: NoticeScore = {
     ...n,
     // Deliberately the most sensitive rule in the tool: ANY statement rated
@@ -465,7 +710,7 @@ export function scoreScreening(responses: Responses): ScreeningResult {
     affectingParticipation: n.often >= 1 || n.sometimes >= 1,
   };
 
-  const scored: FoundationScore[] = foundations.map((f) => {
+  const scored: FoundationScore[] = form.foundations.map((f) => {
     const t = tally(
       f.items.map((i) => i.id),
       responses,
@@ -501,7 +746,7 @@ export function scoreScreening(responses: Responses): ScreeningResult {
         b.concern - a.concern,
     );
 
-  const c = tally(confidenceItemIds, responses);
+  const c = tally(form.confidenceItemIds, responses);
   const confidence: ConfidenceScore = {
     often: c.often,
     sometimes: c.sometimes,
@@ -510,7 +755,7 @@ export function scoreScreening(responses: Responses): ScreeningResult {
     // Listed even when the verdict stays quiet — a single "sometimes" doesn't
     // reach the threshold, but it is still something the teacher saw and is
     // worth handing back to them.
-    noticed: confidenceItems
+    noticed: form.confidenceItems
       .map((i) => ({ label: i.label, rating: responses[i.id] }))
       .filter(
         (n): n is { label: string; rating: Rating } =>
@@ -531,9 +776,16 @@ export function scoreScreening(responses: Responses): ScreeningResult {
 
 // ── Student profile options ──────────────────────────────────────
 
-/** The school years staff can pick when adding a student. */
+/**
+ * The school years staff can pick when adding a student.
+ *
+ * The first year of school is called different things in different states —
+ * Foundation in the national curriculum, Reception in SA — so it carries both
+ * names. Students added before this read "Foundation" alone; nothing depends
+ * on the exact wording, so both are left as they are.
+ */
 export const yearLevels = [
-  "Foundation",
+  "Foundation/Reception",
   "Year 1",
   "Year 2",
   "Year 3",
@@ -541,6 +793,23 @@ export const yearLevels = [
   "Year 5",
   "Year 6",
 ];
+
+/**
+ * The form that matches a student's registered year level, or null when there
+ * isn't one — only Year 1 and Year 2 forms exist, so a Foundation or Year 3-6
+ * student has no exact match and the teacher picks the closest fit themselves.
+ *
+ * This only ever suggests. A child working well below or above their year
+ * should be rated against the expectations that actually fit them, so the
+ * choice stays with the teacher.
+ */
+export function formForYearLevel(
+  yearLevel: string | null | undefined,
+): FormId | null {
+  if (yearLevel === "Year 1") return "year-1";
+  if (yearLevel === "Year 2") return "year-2";
+  return null;
+}
 
 /** The four school terms staff can pick when adding a student. */
 export const terms = ["Term 1", "Term 2", "Term 3", "Term 4"];

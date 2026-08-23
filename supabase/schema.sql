@@ -62,6 +62,14 @@ alter table public.screenings
 alter table public.screenings
   add column if not exists reflection jsonb not null default '{}'::jsonb;
 
+-- Added with the Year 2 form. `form_id` records WHICH screener form produced
+-- these answers ('year-1' or 'year-2'), because the two forms ask different
+-- statements under different item ids — without it, a saved screening cannot
+-- be scored correctly later. Every screening that existed before this column
+-- was the Year 1 form, which is what the default backfills them to.
+alter table public.screenings
+  add column if not exists form_id text not null default 'year-1';
+
 grant select, insert, update, delete on public.screenings to authenticated;
 alter table public.screenings enable row level security;
 
@@ -72,7 +80,7 @@ create policy "Staff manage own screenings"
   with check (auth.uid() = staff_id);
 
 -- ────────────────────────────────────────────────────────────────
--- programs: one 10-week program for a student, built from a screening
+-- programs: one 20-week program for a student, built from a screening
 --   domain_ids      = the chosen foundations, worst-first. This IS the
 --                     tailoring — the session wording itself lives in
 --                     src/lib/programContent.ts, not in the database.
@@ -112,11 +120,20 @@ create table if not exists public.program_sessions (
   id           uuid primary key default gen_random_uuid(),
   program_id   uuid not null references public.programs (id) on delete cascade,
   staff_id     uuid not null references auth.users (id) on delete cascade,
-  week         integer not null check (week between 1 and 10),
+  week         integer not null check (week between 1 and 20),
   observation  text,
   completed_at timestamptz not null default now(),
   unique (program_id, week)
 );
+
+-- The program grew from ten weeks to twenty in Aug 2026. `create table if not
+-- exists` above leaves an existing table's CHECK alone, so the old
+-- "between 1 and 10" rule has to be replaced explicitly or weeks 11-20 are
+-- rejected on save.
+alter table public.program_sessions
+  drop constraint if exists program_sessions_week_check;
+alter table public.program_sessions
+  add constraint program_sessions_week_check check (week between 1 and 20);
 
 create index if not exists program_sessions_program_idx
   on public.program_sessions (program_id);

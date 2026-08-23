@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import ScreenAStudentLink from "@/components/ScreenAStudentLink";
 import IcebergModel from "@/components/IcebergModel";
 import { ArticleSections, type Section } from "@/components/ArticleBody";
 
@@ -294,12 +295,7 @@ export default function IcebergPage() {
           Our screener works down the iceberg foundation by foundation and shows
           you exactly where a student needs support.
         </p>
-        <Link
-          href="/login"
-          className="mt-6 inline-flex rounded-full bg-white px-7 py-3 text-lg font-semibold text-msot-blue transition-transform hover:scale-[1.03]"
-        >
-          Screen a student →
-        </Link>
+        <ScreenAStudentLink className="mt-6" />
         <p className="mt-5 text-sm text-white/75">
           The iceberg is half the picture —{" "}
           <Link href="/the-handwriting-model" className="underline">

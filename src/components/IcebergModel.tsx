@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import ScreenAStudentLink from "@/components/ScreenAStudentLink";
 import {
   foundations,
   whatWeSee,
@@ -314,12 +314,7 @@ export default function IcebergModel({
             Our screener checks each of these foundational skill areas and shows
             you exactly where a student needs support.
           </p>
-          <Link
-            href="/login"
-            className="mt-6 inline-flex rounded-full bg-white px-7 py-3 text-lg font-semibold text-msot-blue transition-transform hover:scale-[1.03]"
-          >
-            Screen a student →
-          </Link>
+          <ScreenAStudentLink className="mt-6" />
         </div>
       )}
 
