@@ -62,7 +62,11 @@ function items(prefix: string, labels: string[]): Item[] {
   Year 2 ids therefore carry a prefix. Year 1 keeps its bare ids exactly as
   they were, so every screening saved before this change still scores.
 */
-const ITEM_PREFIX = { "year-1": "", "year-2": "y2-" } as const;
+const ITEM_PREFIX = {
+  "reception-foundations": "rf-",
+  "year-1": "",
+  "year-2": "y2-",
+} as const;
 
 // ── Guidance shown at the top ────────────────────────────────────
 // One statement rather than two: the screener already asks a lot of a
@@ -73,8 +77,17 @@ const ITEM_PREFIX = { "year-1": "", "year-2": "y2-" } as const;
 const year1Guidance =
   "Rate each statement on what you have noticed across several classroom activities. Rate against typical Year 1 expectations. Please note letter reversals remain developmentally normal until approximately 7 years of age.";
 
+const receptionAnchor = "AC9EFLY08";
 const year1Anchor = "AC9E1LY08";
 const year2Anchor = "AC9E2LY08";
+
+/*
+  Reception is the first year of school, so the guidance says plainly what is
+  still developmentally normal. Without that, a teacher rating a five-year-old
+  against Year 1 wording flags half the cohort.
+*/
+const receptionGuidance =
+  "Rate each statement on what you have noticed across several classroom activities, not a single difficult writing lesson. Rate against what is typical for the first year of school (Reception / Foundations). An emerging hand preference, occasional letter reversals and letters that are not yet neat are developmentally normal at this stage.";
 
 const year2Guidance =
   "Rate each statement on what you have noticed across several classroom activities, not a single difficult writing lesson. Rate against typical Year 2 expectations (the third year of school), where legible, unjoined upper- and lower-case letters with growing fluency and speed are expected. By this stage letter reversals should be resolving — flag the reversal item only if reversals are frequent or persistent.";
@@ -82,6 +95,22 @@ const year2Guidance =
 // ── PART 1 · NOTICE — the tip of the iceberg ─────────────────────
 
 const year1Notice: Item[] = items("notice", [
+  "The child's handwriting is difficult to read.",
+  "Letters are formed incorrectly or inconsistently.",
+  "Letter size, spacing or placement on the line is inconsistent.",
+  "Writing is noticeably slower or more effortful than expected.",
+  "The child has difficulty completing an appropriate amount of written work.",
+  "Handwriting quality deteriorates as the task continues.",
+  "The child reports hand pain, discomfort or tiredness.",
+  "The child avoids, resists or becomes distressed by writing.",
+]);
+
+/*
+  Reception asks exactly what Year 1 asks here. What a teacher can see on the
+  page is the same at both stages — it is the expectation being rated against
+  that differs, and that lives in the guidance above.
+*/
+const receptionNotice: Item[] = items("rf-notice", [
   "The child's handwriting is difficult to read.",
   "Letters are formed incorrectly or inconsistently.",
   "Letter size, spacing or placement on the line is inconsistent.",
@@ -212,6 +241,108 @@ const year1Foundations: Foundation[] = [
     ],
     "write words using unjoined lower-case and upper-case letters",
     year1Anchor,
+  ),
+];
+
+/*
+  Reception / Foundations. The eight foundations and their domain ids are the
+  same as every other form.
+
+  Its statements match the Year 2 list rather than the Year 1 one, which looks
+  wrong at first glance but is what the screener asks for: the five-statement
+  versions describe what an observer can see, and those observations are just
+  as available in the first year of school as the third. Year 1's shorter
+  lists are the outlier. The one wording difference is bilateral #1, which
+  says "hold the paper" here — steadying it is a later skill.
+*/
+const receptionFoundations: Foundation[] = [
+  foundation("reception-foundations", 1, "postural-control", "Postural Control", [
+    "The child slumps, leans heavily on the desk or supports their head while writing.",
+    "The child has difficulty keeping their feet and body stable.",
+    "The child frequently changes position or leaves their seat during writing.",
+    "The child appears physically tired during longer writing activities.",
+    "The child uses large movements from the shoulder rather than controlled movements of the hand and fingers.",
+  ]),
+  foundation(
+    "reception-foundations",
+    2,
+    "bilateral-coordination",
+    "Bilateral Coordination",
+    [
+      "The child does not consistently use their other hand to hold the paper.",
+      "The child frequently swaps the pencil between hands.",
+      "The child turns their body or paper excessively instead of reaching across the page.",
+      "The child has difficulty moving smoothly across the page from left to right.",
+      "The child also finds two-handed classroom activities, such as cutting, ruling or opening containers, difficult.",
+    ],
+  ),
+  foundation("reception-foundations", 3, "fine-motor-control", "Fine Motor Control", [
+    "The child has difficulty making small, controlled pencil movements.",
+    "The child holds the pencil very tightly, awkwardly or with more fingers than appear necessary for control.",
+    "The child presses extremely hard or produces marks that are unusually faint.",
+    "The child's hand becomes tired, sore or shaky during writing.",
+    "Letter formation and pencil control deteriorate as the task continues.",
+  ]),
+  foundation(
+    "reception-foundations",
+    4,
+    "sensory-regulation",
+    "Sensory Regulation & Body Awareness",
+    [
+      "The child has difficulty settling their body and becoming ready to write.",
+      "The child is easily distracted or distressed by ordinary classroom noise, touch or movement.",
+      "The child frequently seeks movement, pressure or tactile input during writing.",
+      "The child appears unaware of how much pressure they are using with the pencil.",
+      "The child does not readily notice when their position is uncomfortable or their hand is becoming tired.",
+    ],
+  ),
+  foundation("reception-foundations", 5, "visual-perception", "Visual Perception", [
+    "The child confuses letters or shapes that look similar.",
+    "The child frequently reverses letters beyond what would be expected for their age and stage of learning.",
+    "The child has difficulty judging spaces between letters or words.",
+    "The child loses their place when reading, copying or moving across a worksheet.",
+    "The child has difficulty remembering the visual appearance of familiar letters.",
+  ]),
+  foundation(
+    "reception-foundations",
+    6,
+    "visual-motor-integration",
+    "Visual-Motor Integration",
+    [
+      "The child has difficulty copying pre-writing shapes expected for their developmental level.",
+      "The child has difficulty copying simple patterns, drawings or letters.",
+      "Letters are uneven in size or poorly positioned on the writing line.",
+      "The child finds copying from the board more difficult than copying from a nearby model.",
+      "What the child produces on paper does not closely resemble the model, even when they appear to understand the task.",
+    ],
+  ),
+  foundation(
+    "reception-foundations",
+    7,
+    "attention-executive-function",
+    "Attention & Executive Function",
+    [
+      "The child has difficulty beginning a writing task, even when they understand what to do.",
+      "The child loses focus before completing a short, appropriate writing activity.",
+      "The child forgets instructions or loses track of the next step.",
+      "The child has difficulty organising their materials, ideas or space on the page.",
+      "The child becomes overwhelmed when required to think of ideas, spell and form letters at the same time.",
+    ],
+  ),
+  foundation(
+    "reception-foundations",
+    8,
+    "language-letter-knowledge",
+    "Language & Letter Knowledge",
+    [
+      "The child has difficulty understanding the language used in writing instructions.",
+      "The child has difficulty expressing their idea verbally before writing.",
+      "The child does not consistently recognise or name letters expected for their stage of learning.",
+      "The child has difficulty connecting letters with their corresponding sounds.",
+      "The child cannot readily recall how to form familiar letters without copying a model.",
+    ],
+    "form most lower-case and upper-case letters using learnt letter formations",
+    receptionAnchor,
   ),
 ];
 
@@ -348,6 +479,14 @@ export const preWritingShapes: PreWritingShape[] = [
   { id: "diamond", label: "Diamond" },
 ];
 
+/*
+  The shape check earns its place most at this stage: in the first year of
+  school the pre-writing shapes ARE the curriculum, so which ones a child can
+  copy decides which letters to teach next.
+*/
+const receptionShapeIntro =
+  "Ask the child to copy each shape. This helps decide which letters to introduce first — the shapes are the movements that build letters.";
+
 const year1ShapeIntro =
   "Ask the child to copy each shape. This helps decide which letters to introduce first — the shapes are the movements that build letters.";
 
@@ -355,7 +494,7 @@ const year2ShapeIntro =
   "Ask the child to copy each shape. By Year 2 most children copy these easily — if letters are still poorly formed, this confirms the underlying movements are secure and helps decide which letters to revisit first.";
 
 export const shapeCheckHint =
-  "Rate at least the vertical, horizontal and circle shapes and Sense will suggest which letters to introduce first.";
+  "Rate at least the vertical, horizontal and circle shapes to see which letters to introduce first.";
 
 /** The three shapes that must be rated before a letter suggestion is offered. */
 export const SHAPE_SUGGESTION_REQUIRES = ["vertical", "horizontal", "circle"];
@@ -426,6 +565,7 @@ const confidenceLabels = [
 // Identical wording in both forms — how a child feels about writing doesn't
 // change with the year level. Only the ids differ, so each form's answers
 // stay distinguishable.
+const receptionConfidence: Item[] = items("rf-confidence", confidenceLabels);
 const year1Confidence: Item[] = items("confidence", confidenceLabels);
 const year2Confidence: Item[] = items("y2-confidence", confidenceLabels);
 
@@ -442,7 +582,7 @@ export const closingNote =
 
 // ── The forms ────────────────────────────────────────────────────
 
-export type FormId = "year-1" | "year-2";
+export type FormId = "reception-foundations" | "year-1" | "year-2";
 
 /*
   One screener form. Everything that differs between year levels lives here;
@@ -500,6 +640,18 @@ function buildForm(
   };
 }
 
+export const receptionForm = buildForm(
+  "reception-foundations",
+  "Reception/Foundations",
+  "The first year of school. Emerging hand preference and occasional letter reversals are developmentally normal.",
+  receptionGuidance,
+  receptionAnchor,
+  receptionShapeIntro,
+  receptionNotice,
+  receptionFoundations,
+  receptionConfidence,
+);
+
 export const year1Form = buildForm(
   "year-1",
   "Year 1",
@@ -525,7 +677,11 @@ export const year2Form = buildForm(
 );
 
 /** Every form a teacher can choose, in the order they appear on the picker. */
-export const screenerForms: ScreenerForm[] = [year1Form, year2Form];
+export const screenerForms: ScreenerForm[] = [
+  receptionForm,
+  year1Form,
+  year2Form,
+];
 
 /**
  * The form a saved screening was completed on. Screenings written before Year 2
@@ -785,7 +941,7 @@ export function scoreScreening(
  * on the exact wording, so both are left as they are.
  */
 export const yearLevels = [
-  "Foundation/Reception",
+  "Reception/Foundations",
   "Year 1",
   "Year 2",
   "Year 3",
@@ -796,8 +952,8 @@ export const yearLevels = [
 
 /**
  * The form that matches a student's registered year level, or null when there
- * isn't one — only Year 1 and Year 2 forms exist, so a Foundation or Year 3-6
- * student has no exact match and the teacher picks the closest fit themselves.
+ * isn't one — forms exist for Reception/Foundations, Year 1 and Year 2, so a
+ * Year 3-6 student has no exact match and the teacher picks the closest fit.
  *
  * This only ever suggests. A child working well below or above their year
  * should be rated against the expectations that actually fit them, so the
@@ -806,6 +962,15 @@ export const yearLevels = [
 export function formForYearLevel(
   yearLevel: string | null | undefined,
 ): FormId | null {
+  // "Foundation/Reception" was the wording before this level was renamed.
+  // Students added under the old label are still stored with it, so both
+  // spellings have to map or their teachers lose the suggestion.
+  if (
+    yearLevel === "Reception/Foundations" ||
+    yearLevel === "Foundation/Reception"
+  ) {
+    return "reception-foundations";
+  }
   if (yearLevel === "Year 1") return "year-1";
   if (yearLevel === "Year 2") return "year-2";
   return null;

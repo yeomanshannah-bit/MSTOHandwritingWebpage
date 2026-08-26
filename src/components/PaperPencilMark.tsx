@@ -1,10 +1,9 @@
 /*
-  Paper-and-pencil mark — a placeholder for Sense, the mascot.
+  Paper-and-pencil mark — a small decorative device.
 
   Used wherever the platform offers to build or continue a program. Drawn in
-  the MSOT palette and sized to sit beside a heading. When Sense's artwork
-  lands, swap this component's contents for the illustration and every place
-  that uses it updates at once.
+  the MSOT palette and sized to sit beside a heading. Swap this component's
+  contents to change the artwork, and every place that uses it updates at once.
 */
 export default function PaperPencilMark({
   className = "",
