@@ -30,7 +30,7 @@ const learnItems: NavMenuItem[] = [
   {
     href: "/programs",
     label: "Programs",
-    blurb: "A worked example of the tailored 20-week program.",
+    blurb: "A worked example of the tailored Two Term program.",
   },
 ];
 
@@ -66,12 +66,12 @@ export default async function SiteHeader() {
       <div className="flex w-full items-center justify-between gap-4 px-6 py-3 sm:px-8 lg:px-12">
         <Link href="/" className="flex items-center">
           <Image
-            src="/brand/msot-logo.png"
-            alt="Making Sense — Occupational Therapy"
-            width={912}
-            height={298}
+            src="/brand/making-sense-together-header.png"
+            alt="Making Sense Together — support, connect, grow"
+            width={1010}
+            height={837}
             priority
-            className="h-10 w-auto"
+            className="h-14 w-auto sm:h-16"
           />
         </Link>
 

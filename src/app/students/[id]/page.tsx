@@ -102,7 +102,7 @@ export default async function StudentPage({
       >
         <div>
           <p className="text-lg font-semibold text-msot-navy">
-            {baseline ? "20-week program" : "Baseline writing sample"}
+            {baseline ? "Two Term program" : "Baseline writing sample"}
           </p>
           <p className="text-sm text-foreground/65">
             {baseline

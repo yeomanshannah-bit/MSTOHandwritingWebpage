@@ -5,7 +5,7 @@ import SessionDetail from "./SessionDetail";
 import type { Session } from "@/lib/programContent";
 
 /*
-  The 20-week program as a timeline.
+  The Two Term program as a timeline.
 
   Weeks unlock in order: week 1 is open from the start, and each later week
   stays locked until the one before it is marked complete. That's deliberate —

@@ -12,7 +12,7 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "Making Sense OT — Handwriting",
   description:
-    "Free handwriting education, plus a screening tool and 20-week program for school support staff.",
+    "Free handwriting education, plus a screening tool and Two Term program for school support staff.",
 };
 
 export default function RootLayout({

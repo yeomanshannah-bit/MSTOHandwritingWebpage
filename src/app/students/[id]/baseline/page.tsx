@@ -12,7 +12,7 @@ import { recordBaselinePhoto, deleteBaselinePhoto } from "./actions";
   alphabet), which shows every letter form in one short piece of writing.
 
   The photo is required before the program can be built — that's the point of
-  a baseline. The "Build the 20-week program" button only appears once one has
+  a baseline. The "Build the Two Term program" button only appears once one has
   been taken.
 */
 
@@ -226,13 +226,13 @@ export default async function BaselinePage({
               href={`/students/${id}/program`}
               className="mt-5 inline-flex rounded-full bg-msot-teal px-6 py-3 font-semibold text-white transition-transform hover:scale-[1.03]"
             >
-              Build the 20-week program →
+              Build the Two Term program →
             </Link>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-black/15 p-6 text-center">
             <p className="text-foreground/50">
-              Add the baseline photo above to continue to the 20-week program.
+              Add the baseline photo above to continue to the Two Term program.
             </p>
           </div>
         )}

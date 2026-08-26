@@ -40,7 +40,7 @@ function TimerIcon({ className = "" }: { className?: string }) {
 }
 
 /*
-  A student's 20-week program.
+  A student's Two Term program.
 
   If they have no program yet we offer to build one from their most recent
   screening. Once it exists, the weeks are shown as a timeline that unlocks one
@@ -140,7 +140,7 @@ export default async function StudentProgramPage({
       <div className="mx-auto max-w-2xl px-6 py-12">
         {backLink}
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-msot-navy">
-          20-week program
+          Two Term program
         </h1>
 
         {!screening ? (
@@ -225,7 +225,7 @@ export default async function StudentProgramPage({
     <div className="mx-auto max-w-2xl px-6 py-12">
       {backLink}
 
-      <p className="mt-4 text-sm font-medium text-msot-blue">20-week program</p>
+      <p className="mt-4 text-sm font-medium text-msot-blue">Two Term program</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight text-msot-navy">
         {student.initials} · {student.year_level}
       </h1>

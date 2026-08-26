@@ -11,7 +11,7 @@ import {
 export const metadata: Metadata = {
   title: "Handwriting programs — Making Sense OT",
   description:
-    "A worked example of the tailored 20-week handwriting intervention program.",
+    "A worked example of the tailored Two Term handwriting intervention program.",
 };
 
 /*
@@ -46,7 +46,7 @@ export default function ProgramsPage() {
         Handwriting programs
       </p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight text-msot-navy sm:text-4xl">
-        A tailored 20-week program
+        A tailored Two Term program
       </h1>
       <p className="mt-4 text-lg leading-8 text-foreground/70">
         Once a student has been screened, their flagged foundations become a
@@ -166,7 +166,7 @@ export default function ProgramsPage() {
                 <span className="h-2 w-2 rounded-full bg-msot-yellow" />
                 <span className="h-2 w-2 rounded-full bg-msot-teal/70" />
                 <span className="ml-2 truncate text-[10px] text-foreground/40">
-                  {demoStudent.initials} · 20-week program
+                  {demoStudent.initials} · Two Term program
                 </span>
               </div>
 
@@ -256,7 +256,7 @@ export default function ProgramsPage() {
           Screen a student now and build a program
         </h2>
         <p className="mt-2 max-w-lg leading-7 text-foreground/70">
-          Screen a student across the eight foundations and their 20-week
+          Screen a student across the eight foundations and their Two Term
           program is built from the areas that need support.
         </p>
         <ScreenAStudentLink className="mt-6" />

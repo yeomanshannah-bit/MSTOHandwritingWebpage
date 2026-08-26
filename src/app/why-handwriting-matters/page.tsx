@@ -209,7 +209,7 @@ export default function WhyHandwritingMattersPage() {
               </h2>
               <p className="mt-2 text-[15px] leading-7 text-foreground/70">
                 Our screening tool checks the eight foundations that sit beneath
-                handwriting and builds a tailored 20-week program around what it
+                handwriting and builds a tailored Two Term program around what it
                 finds.
               </p>
               <ScreenAStudentLink />

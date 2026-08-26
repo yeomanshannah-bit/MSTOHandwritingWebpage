@@ -401,7 +401,7 @@ export default async function ResultsPage({
           Let&apos;s build {student.initials} a program
         </h2>
         <p className="mt-2 max-w-lg leading-7 text-foreground/70">
-          A self-paced 20-week program with strategies specific to your
+          A self-paced Two Term program with strategies specific to your
           student&apos;s needs.
         </p>
         <Link

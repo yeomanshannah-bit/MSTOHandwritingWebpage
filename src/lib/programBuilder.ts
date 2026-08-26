@@ -1,5 +1,5 @@
 /*
-  Turns a screening result into a 20-week program.
+  Turns a screening result into a Two Term program.
 
   The tailoring is the SELECTION, not the content: we take the domains the
   screener flagged (worst first), keep the top few, then lay their sessions out
