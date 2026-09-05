@@ -1,4 +1,4 @@
--- Making Sense OT — database schema
+-- Making Sense Together — database schema
 -- Paste this into Supabase → SQL Editor → New query → Run.
 -- Safe to re-run: it only creates things if they don't already exist.
 
@@ -195,3 +195,55 @@ create policy "Staff manage own baseline files"
     bucket_id = 'baselines'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
+
+-- ────────────────────────────────────────────────────────────────
+-- teacher_feedback: the two-minute questionnaire from the screener beta.
+--
+-- One row per staff member, not one per screening — it asks about the tool
+-- overall, so a teacher fills it in once however many children they screened.
+-- That is what the unique constraint on staff_id enforces, and it is what
+-- lets the form save over itself as they type.
+--
+-- Every answer is nullable and the row is created on the first keystroke, so
+-- an abandoned half-filled form still leaves its answers behind. `submitted_at`
+-- is what separates a draft from a finished response: null means they stopped
+-- partway. Read both — a partly-filled form is still feedback.
+--
+-- Answers live in their own columns rather than one jsonb blob so the rows
+-- are readable straight from the Supabase Table Editor without unpacking.
+-- ────────────────────────────────────────────────────────────────
+create table if not exists public.teacher_feedback (
+  id                 uuid primary key default gen_random_uuid(),
+  staff_id           uuid not null unique references auth.users (id) on delete cascade,
+
+  -- Context for the answers below.
+  year_levels        text,
+  children_screened  text,
+
+  -- Q1-Q6. Stored as the literal option text ('Yes', 'Mostly', 'No', …) so a
+  -- row means something on its own, without a lookup table to decode it.
+  clear_and_easy     text,  -- Was the screener clear and easy to complete?
+  time_per_child     text,  -- How long did it take for each child?
+  reflected_class    text,  -- Did the questions reflect what you see in class?
+  ratings_clear      text,  -- Were the Green/Amber/Red ratings easy to follow?
+  helped_next_steps  text,  -- Did the results help you know what's needed next?
+  would_use_again    text,  -- Would you use this screener again?
+
+  most_useful        text,  -- Free text: "The most useful part was:"
+
+  submitted_at       timestamptz,          -- null while still a draft
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+
+grant select, insert, update, delete on public.teacher_feedback to authenticated;
+alter table public.teacher_feedback enable row level security;
+
+-- Teachers see and edit only their own response. (The project owner reads all
+-- of them from the Supabase dashboard, which runs as the service role and so
+-- is not subject to this policy.)
+drop policy if exists "Staff manage own feedback" on public.teacher_feedback;
+create policy "Staff manage own feedback"
+  on public.teacher_feedback for all
+  using (auth.uid() = staff_id)
+  with check (auth.uid() = staff_id);
