@@ -5,6 +5,21 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
+/*
+  Supabase answers a wrong password and an email that has no account with the
+  same "Invalid login credentials" — deliberately, so an attacker can't use
+  the login form to discover which addresses are registered. That is the right
+  call, but on its own it strands a teacher who simply mistyped their email:
+  the message gives them nothing to check. So we keep the message vague about
+  WHICH half was wrong, and add the one piece of advice that actually helps.
+*/
+function friendlySignInError(message: string) {
+  if (/invalid login credentials/i.test(message)) {
+    return "That email and password don't match an account. Check your email for typos — a mistyped address is treated as a different account, not as an error.";
+  }
+  return message;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -29,7 +44,7 @@ export default function LoginPage() {
         setError(error.message);
       } else if (data.session) {
         // Signed up and logged straight in.
-        router.push("/students");
+        router.push("/dashboard");
         router.refresh();
       } else {
         // Email confirmation is switched on in Supabase.
@@ -42,9 +57,9 @@ export default function LoginPage() {
         password,
       });
       if (error) {
-        setError(error.message);
+        setError(friendlySignInError(error.message));
       } else {
-        router.push("/students");
+        router.push("/dashboard");
         router.refresh();
       }
     }
@@ -65,9 +80,23 @@ export default function LoginPage() {
       </h1>
       <p className="mt-2 text-center text-foreground/70">
         {mode === "signin"
-          ? "Log in to screen a student and build their program."
+          ? "Log in to screen a student and see their results."
           : "Set up an account to start screening students."}
       </p>
+
+      {/*
+        The trap this closes: signing up with a typo'd email succeeds, and
+        hands you an empty account that looks exactly like your real one with
+        all its data missing. Cheaper to warn here than to explain later.
+      */}
+      {mode === "signup" && (
+        <p className="mt-4 w-full rounded-lg bg-msot-pink/[.15] px-4 py-3 text-sm leading-6 text-msot-navy">
+          This creates a <strong>brand-new, empty account</strong>. If you have
+          screened students before, go back and log in instead — a different
+          email address means a different account, and your students will not
+          be in it.
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-8 w-full space-y-4">
         <div>
@@ -77,6 +106,7 @@ export default function LoginPage() {
           <input
             type="email"
             required
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-lg border border-black/10 px-4 py-2.5 outline-none focus:border-msot-blue focus:ring-2 focus:ring-msot-blue/20"
@@ -91,6 +121,9 @@ export default function LoginPage() {
           <input
             type="password"
             required
+            autoComplete={
+              mode === "signup" ? "new-password" : "current-password"
+            }
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}

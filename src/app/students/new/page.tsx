@@ -2,9 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { createClient } from "@/lib/supabase/client";
-import { yearLevels, terms, currentTerm } from "@/lib/screening";
+import {
+  yearLevels,
+  terms,
+  currentTerm,
+  formForYearLevel,
+} from "@/lib/screening";
 
 export default function NewStudentPage() {
   const router = useRouter();
@@ -56,12 +61,7 @@ export default function NewStudentPage() {
 
   return (
     <div className="mx-auto max-w-md px-6 py-12">
-      <Link
-        href="/students"
-        className="text-sm text-foreground/60 hover:text-msot-blue"
-      >
-        ← Back to students
-      </Link>
+      <BackLink href="/students">Your students</BackLink>
 
       <h1 className="mt-4 text-2xl font-bold text-msot-navy">Add a student</h1>
 
@@ -96,6 +96,24 @@ export default function NewStudentPage() {
               </option>
             ))}
           </select>
+
+          {/*
+            Forms exist for Reception/Foundations, Year 1 and Year 2 only.
+            Rather than hiding the other years (a teacher of a Year 4 needs to
+            be able to add them), say plainly what exists — and don't block the
+            form, because the student profile is still worth creating.
+          */}
+          {!formForYearLevel(year) && (
+            <p className="mt-2 rounded-lg bg-msot-yellow/15 px-4 py-3 text-sm leading-6 text-foreground/75">
+              <span className="font-semibold text-msot-navy">
+                Coming soon!
+              </span>{" "}
+              We currently have screeners tailored to Reception/Foundations,
+              Year 1 and Year 2. You can still add {initials || "this student"}{" "}
+              now — when you screen them, pick the screener that best matches
+              what they can do.
+            </p>
+          )}
         </div>
 
         <div>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/LogoutButton";
+import BackLink from "@/components/BackLink";
 
 /*
   The staff roster. A Server Component: it runs on the server, checks who's
@@ -24,7 +25,9 @@ export default async function StudentsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
-      <div className="flex items-center justify-between">
+      <BackLink href="/dashboard">Dashboard</BackLink>
+
+      <div className="mt-4 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-msot-navy">
             Your students
