@@ -4,7 +4,7 @@ import ScreenAStudentLink from "@/components/ScreenAStudentLink";
 import { ArticleSections, type Section } from "@/components/ArticleBody";
 
 export const metadata: Metadata = {
-  title: "The Evidence Base — Making Sense OT",
+  title: "The Evidence Base",
   description:
     "The research behind the Making Sense of Handwriting model: why handwriting matters for early literacy, what the intervention studies show, and why foundations alone are not enough.",
 };
@@ -435,7 +435,7 @@ export default function TheEvidenceBasePage() {
         </p>
 
         <div className="mt-5 flex items-center gap-3 text-sm text-foreground/60">
-          <span className="font-medium text-msot-navy">Making Sense OT</span>
+          <span className="font-medium text-msot-navy">Making Sense Together</span>
           <span aria-hidden className="text-foreground/25">
             |
           </span>

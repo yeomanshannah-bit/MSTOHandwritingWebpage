@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ArticleSections, type Section } from "@/components/ArticleBody";
 
 export const metadata: Metadata = {
-  title: "Why handwriting still matters in a digital age — Making Sense OT",
+  title: "Why handwriting still matters in a digital age",
   description:
     "Children will type most of the words they ever write. The case for handwriting anyway: how forming letters builds literacy, and when to reach for a keyboard instead.",
 };
@@ -122,7 +122,7 @@ export default function WhyHandwritingMattersPage() {
         </h1>
 
         <div className="mt-5 flex items-center gap-3 text-sm text-foreground/60">
-          <span className="font-medium text-msot-navy">Making Sense OT</span>
+          <span className="font-medium text-msot-navy">Making Sense Together</span>
           <span aria-hidden className="text-foreground/25">
             |
           </span>

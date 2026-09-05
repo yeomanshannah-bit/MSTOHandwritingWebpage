@@ -1,5 +1,5 @@
 /*
-  BrandBackdrop — faint, playful Making Sense OT confetti tucked into the page
+  BrandBackdrop — faint, playful Making Sense Together confetti tucked into the page
   edges, echoing the shapes in the brand logo (rings, triangles, squares, dots).
   It sits behind all content and never intercepts clicks (`pointer-events-none`),
   so it's purely decorative. Kept low-opacity so it adds personality without

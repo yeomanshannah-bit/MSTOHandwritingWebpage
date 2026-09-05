@@ -25,7 +25,7 @@ export async function createClient() {
             );
           } catch {
             // Called from a Server Component where cookies can't be set.
-            // The middleware refreshes the session instead, so this is safe.
+            // The proxy refreshes the session instead, so this is safe.
           }
         },
       },

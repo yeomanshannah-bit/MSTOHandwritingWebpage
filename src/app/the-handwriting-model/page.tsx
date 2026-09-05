@@ -4,7 +4,7 @@ import ScreenAStudentLink from "@/components/ScreenAStudentLink";
 import { ArticleSections, type Section } from "@/components/ArticleBody";
 
 export const metadata: Metadata = {
-  title: "The Making Sense of Handwriting Model — Making Sense OT",
+  title: "The Making Sense of Handwriting Model",
   description:
     "A practical and balanced approach for busy classrooms: support the foundations that make writing possible, and explicitly teach and practise handwriting itself.",
 };
@@ -116,7 +116,7 @@ export default function TheHandwritingModelPage() {
         </p>
 
         <div className="mt-5 flex items-center gap-3 text-sm text-foreground/60">
-          <span className="font-medium text-msot-navy">Making Sense OT</span>
+          <span className="font-medium text-msot-navy">Making Sense Together</span>
           <span aria-hidden className="text-foreground/25">
             |
           </span>

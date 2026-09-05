@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
-  Making Sense OT brand palette — sampled from the brand logo.
+  Making Sense Together brand palette — sampled from the brand logo.
   Registering them here with Tailwind's @theme turns each colour into a
   utility class, e.g. `text-msot-blue`, `bg-msot-teal`, `border-msot-cyan`.
 */

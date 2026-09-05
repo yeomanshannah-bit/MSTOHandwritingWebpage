@@ -3,12 +3,17 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { AuthError } from "@supabase/supabase-js";
 
 /*
-  Middleware runs before every matching request. It does three jobs:
+  Proxy runs before every matching request. (Next.js 16 renamed Middleware to
+  Proxy; the behaviour is unchanged, but the file must be named proxy.ts and
+  export a `proxy` function or the old name warns on every boot.)
+
+  It does three jobs:
    1. Keeps the login session cookie fresh so users stay logged in.
    2. Clears a session cookie that can no longer be refreshed, so a dead
       login doesn't wedge the browser (see isDeadSession below).
    3. Protects the signed-in area — if a logged-out visitor tries to reach a
-      page under /students or /profile, we send them to /login instead, and
+      page under /students, /dashboard, /profile or /feedback, we send them
+      to /login instead, and
       sends anyone already logged in away from /login.
 */
 
@@ -39,7 +44,7 @@ function clearAuthCookies(request: NextRequest, response: NextResponse) {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -72,7 +77,10 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isProtected =
-    pathname.startsWith("/students") || pathname.startsWith("/profile");
+    pathname.startsWith("/students") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/feedback");
 
   // A session we can't refresh: strip the cookie so the next request starts
   // clean, then treat the visitor as logged out.
@@ -95,10 +103,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // Already logged in? The login page has nothing to offer — send them to
-  // their profile, which is what the header button points at anyway.
+  // the dashboard, which is what the header button points at anyway.
   if (pathname === "/login" && user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/profile";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 

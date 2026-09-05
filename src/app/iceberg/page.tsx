@@ -5,7 +5,7 @@ import IcebergModel from "@/components/IcebergModel";
 import { ArticleSections, type Section } from "@/components/ArticleBody";
 
 export const metadata: Metadata = {
-  title: "The Handwriting Iceberg — Making Sense OT",
+  title: "The Handwriting Iceberg",
   description:
     "Looking beneath what we see on the page: the eight foundations that sit under handwriting, what each looks like when it is tricky, and simple ways to help.",
 };
@@ -235,7 +235,7 @@ export default function IcebergPage() {
         </p>
 
         <div className="mt-5 flex items-center gap-3 text-sm text-foreground/60">
-          <span className="font-medium text-msot-navy">Making Sense OT</span>
+          <span className="font-medium text-msot-navy">Making Sense Together</span>
           <span aria-hidden className="text-foreground/25">
             |
           </span>
