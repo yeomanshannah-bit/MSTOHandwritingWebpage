@@ -1,8 +1,10 @@
 import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import BaselineUpload from "@/components/BaselineUpload";
 import { recordBaselinePhoto, deleteBaselinePhoto } from "./actions";
+import { PROGRAMS_ENABLED } from "@/lib/beta";
 
 /*
   Step 4: the baseline writing sample.
@@ -84,12 +86,7 @@ export default async function BaselinePage({
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <Link
-        href={`/students/${id}`}
-        className="text-sm text-foreground/60 hover:text-msot-blue"
-      >
-        ← Back to {student.initials}
-      </Link>
+      <BackLink href={`/students/${id}`}>{student.initials}</BackLink>
 
       <p className="mt-4 text-sm font-medium text-msot-blue">
         Step 4 · Baseline
@@ -222,11 +219,16 @@ export default async function BaselinePage({
               program you&apos;ll compare {student.initials}&apos;s writing
               against it to see how far they&apos;ve come.
             </p>
+            {/* During the beta this leads to the "coming soon" page rather
+                than the program itself, so the label must not promise more
+                than the next click delivers. See src/lib/beta.ts. */}
             <Link
-              href={`/students/${id}/program`}
+              href={PROGRAMS_ENABLED ? `/students/${id}/program` : "/programs"}
               className="mt-5 inline-flex rounded-full bg-msot-teal px-6 py-3 font-semibold text-white transition-transform hover:scale-[1.03]"
             >
-              Build the Two Term program →
+              {PROGRAMS_ENABLED
+                ? "Build the Two Term program →"
+                : "About the Two Term program →"}
             </Link>
           </div>
         ) : (

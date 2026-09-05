@@ -30,7 +30,7 @@ const learnItems: NavMenuItem[] = [
   {
     href: "/programs",
     label: "Programs",
-    blurb: "A worked example of the tailored Two Term program.",
+    blurb: "Check out a preview of our programs coming soon!",
   },
 ];
 
@@ -92,7 +92,7 @@ export default async function SiteHeader() {
           />
           {/*
             Screen a Student points at the roster. Logged-out visitors are
-            bounced to /login by the middleware, so this one link works for
+            bounced to /login by the proxy, so this one link works for
             everyone without the header having to branch.
           */}
           <Link
@@ -103,13 +103,14 @@ export default async function SiteHeader() {
           </Link>
           {/*
             The account button never moves. Logged out it opens the login and
-            sign-up portal; logged in it becomes the way back to your profile.
+            sign-up portal; logged in it is the way back to the dashboard —
+            the one home for a signed-in teacher.
           */}
           <Link
-            href={user ? "/profile" : "/login"}
+            href={user ? "/dashboard" : "/login"}
             className="rounded-full bg-msot-teal px-4 py-2 text-white transition-colors hover:bg-msot-teal/85"
           >
-            {user ? "My Profile" : "Log In"}
+            {user ? "My Dashboard" : "Log In"}
           </Link>
         </nav>
       </div>

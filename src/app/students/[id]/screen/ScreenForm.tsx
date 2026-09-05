@@ -450,12 +450,16 @@ export default function ScreenForm({
               </>
             ) : (
               <>
-                This student is registered as{" "}
+                <span className="font-semibold text-msot-navy">
+                  Coming soon!
+                </span>{" "}
+                We currently have screeners tailored to
+                Reception/Foundations, Year 1 and Year 2. This student is
+                registered as{" "}
                 <span className="font-semibold text-msot-navy">
                   {yearLevel}
                 </span>
-                . There is no form for that year yet — pick whichever
-                expectations fit them best.
+                , so pick whichever expectations fit them best.
               </>
             )}
           </p>

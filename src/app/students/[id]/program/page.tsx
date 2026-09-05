@@ -19,6 +19,7 @@ import {
 } from "@/lib/programContent";
 import ProgramTimeline from "@/components/ProgramTimeline";
 import { completeWeek, reopenWeek } from "./actions";
+import { PROGRAMS_ENABLED } from "@/lib/beta";
 
 /** Small timer, shown beside each step's duration. */
 function TimerIcon({ className = "" }: { className?: string }) {
@@ -52,6 +53,17 @@ export default async function StudentProgramPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  /*
+    Sealed off for the screener beta. Everything below this point is finished
+    and works, it just isn't ready to be seen — so every route to a program
+    lands on the one public "coming soon" page instead, which explains what is
+    coming and shows a preview. One page to keep current rather than several.
+
+    Checked before the session lookup: there is no reason to touch the
+    database on the way to a redirect. See src/lib/beta.ts.
+  */
+  if (!PROGRAMS_ENABLED) redirect("/programs");
 
   const supabase = await createClient();
   const {

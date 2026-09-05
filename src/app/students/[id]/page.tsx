@@ -1,6 +1,9 @@
 import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { PROGRAMS_ENABLED } from "@/lib/beta";
+import ProgramComingSoon from "@/components/ProgramComingSoon";
 
 /*
   One student's hub page. The [id] folder name makes this a dynamic route:
@@ -48,12 +51,7 @@ export default async function StudentPage({
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <Link
-        href="/students"
-        className="text-sm text-foreground/60 hover:text-msot-blue"
-      >
-        ← Back to students
-      </Link>
+      <BackLink href="/students">Your students</BackLink>
 
       <div className="mt-4 flex items-center gap-4">
         <span className="grid h-14 w-14 place-items-center rounded-full bg-msot-cyan/15 text-lg font-bold text-msot-navy">
@@ -97,23 +95,36 @@ export default async function StudentPage({
       </Link>
 
       <Link
-        href={`/students/${id}/${baseline ? "program" : "baseline"}`}
+        href={`/students/${id}/${baseline || !PROGRAMS_ENABLED ? "baseline" : "program"}`}
         className="mt-3 flex items-center justify-between rounded-2xl border border-msot-teal/30 bg-msot-teal/[.07] p-6 transition-colors hover:bg-msot-teal/[.12]"
       >
         <div>
           <p className="text-lg font-semibold text-msot-navy">
-            {baseline ? "Two Term program" : "Baseline writing sample"}
+            {baseline && PROGRAMS_ENABLED
+              ? "Two Term program"
+              : baseline
+                ? "Writing sample"
+                : "Baseline writing sample"}
           </p>
           <p className="text-sm text-foreground/65">
-            {baseline
+            {baseline && PROGRAMS_ENABLED
               ? "Work through one session a week, unlocking as you go."
-              : "Capture a writing sample before the program starts."}
+              : baseline
+                ? "View or replace the writing sample you captured."
+                : "Capture a writing sample of this student's handwriting."}
           </p>
         </div>
         <span aria-hidden className="text-2xl text-msot-teal">
           →
         </span>
       </Link>
+
+      {/*
+        During the beta the program is real but unfinished, so this stands in
+        its place: not a disabled button (nothing to press, nothing to fail)
+        but a plain note that the next part is on its way. See src/lib/beta.ts.
+      */}
+      {!PROGRAMS_ENABLED && <ProgramComingSoon className="mt-3" />}
 
       <h2 className="mt-10 text-lg font-semibold text-msot-navy">
         Past screenings

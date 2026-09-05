@@ -1,7 +1,10 @@
 import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PaperPencilMark from "@/components/PaperPencilMark";
+import ProgramComingSoon from "@/components/ProgramComingSoon";
+import { PROGRAMS_ENABLED } from "@/lib/beta";
 import {
   scoreScreening,
   getForm,
@@ -64,6 +67,15 @@ export default async function ResultsPage({
 
   if (!student || !screening) notFound();
 
+  // Only to decide whether to ask for feedback below — once they've sent it,
+  // the prompt goes away for good.
+  const { data: feedback } = await supabase
+    .from("teacher_feedback")
+    .select("submitted_at")
+    .eq("staff_id", user.id)
+    .maybeSingle();
+  const feedbackGiven = Boolean(feedback?.submitted_at);
+
   // Recompute the summary from the stored answers (one source of truth).
   // Scoring needs the form these answers were given on — item ids differ
   // between year levels.
@@ -82,12 +94,7 @@ export default async function ResultsPage({
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <Link
-        href={`/students/${id}`}
-        className="text-sm text-foreground/60 hover:text-msot-blue"
-      >
-        ← Back to {student.initials}
-      </Link>
+      <BackLink href={`/students/${id}`}>{student.initials}</BackLink>
 
       <p className="mt-4 text-sm font-medium text-msot-blue">
         Screening results
@@ -398,21 +405,52 @@ export default async function ResultsPage({
       */}
       <div className="relative mt-12 rounded-2xl border border-msot-teal/25 bg-msot-teal/[.06] p-7">
         <h2 className="text-2xl font-bold leading-snug text-msot-navy">
-          Let&apos;s build {student.initials} a program
+          {PROGRAMS_ENABLED
+            ? `Let\u2019s build ${student.initials} a program`
+            : `Capture ${student.initials}\u2019s handwriting`}
         </h2>
         <p className="mt-2 max-w-lg leading-7 text-foreground/70">
-          A self-paced Two Term program with strategies specific to your
-          student&apos;s needs.
+          {PROGRAMS_ENABLED
+            ? "A self-paced Two Term program with strategies specific to your student\u2019s needs."
+            : "A photo of a writing sample now gives you something to compare against later \u2014 and it is the starting point the program will build from."}
         </p>
         <Link
           href={`/students/${id}/baseline`}
           className="mt-6 inline-flex rounded-full bg-msot-teal px-6 py-3 font-medium text-white transition-colors hover:brightness-95"
         >
-          Build a program →
+          {PROGRAMS_ENABLED
+            ? "Build a program \u2192"
+            : "Add a writing sample \u2192"}
         </Link>
 
         <PaperPencilMark className="pointer-events-none absolute bottom-6 right-6 h-14 w-14" />
       </div>
+
+      {/* The program itself is still being written; say so plainly rather
+          than offering a door that opens onto nothing. */}
+      {!PROGRAMS_ENABLED && <ProgramComingSoon className="mt-3" />}
+
+      {/* Asked here because this is the moment a teacher has just seen what
+          the screener produces — and dropped once they've answered, so it
+          never becomes nagging. */}
+      {!feedbackGiven && (
+        <div className="mt-3 rounded-2xl border border-msot-pink/40 bg-msot-pink/[.10] p-6">
+          <p className="text-lg font-semibold text-msot-navy">
+            How did that go?
+          </p>
+          <p className="mt-1.5 max-w-lg text-sm leading-6 text-foreground/70">
+            You are one of a small group trialling this screener. Six quick
+            questions — about two minutes — and they shape what gets built
+            next.
+          </p>
+          <Link
+            href="/feedback"
+            className="mt-4 inline-flex rounded-full bg-msot-navy px-5 py-2.5 text-sm font-medium text-white transition-colors hover:brightness-110"
+          >
+            Give feedback →
+          </Link>
+        </div>
+      )}
 
       {/* Plain closing note — a caveat, not a callout. No panel, no tint. */}
       <p className="mt-14 max-w-2xl text-sm leading-6 text-foreground/60">

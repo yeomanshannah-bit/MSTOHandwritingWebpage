@@ -74,7 +74,7 @@ export const philosophy = {
 };
 
 export const howToUse =
-  "We recommend you complete one session each week for 20 weeks. Activities can be repeated more than once within the same week. The order we have built is based on your student's areas of challenge identified in the screener, and will provide tailored progressions.";
+  "We recommend you complete one 15\u201320 minute session 2\u20133 times per week, for two terms. The order we have built is based on your student's areas of challenge identified in the screener, and will provide tailored progressions.";
 
 export const safetyPrinciples = [
   "Use the child\u2019s school-approved letter style and the same short formation language across adults.",

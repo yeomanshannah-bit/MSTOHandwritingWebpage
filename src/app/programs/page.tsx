@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import ScreenAStudentLink from "@/components/ScreenAStudentLink";
 import { buildProgram, sessionCounts, MAX_DOMAINS } from "@/lib/programBuilder";
 import PaperPencilMark from "@/components/PaperPencilMark";
@@ -9,9 +10,9 @@ import {
 } from "@/lib/programContent";
 
 export const metadata: Metadata = {
-  title: "Handwriting programs — Making Sense OT",
+  title: "Two Term Program: Coming Soon",
   description:
-    "A worked example of the tailored Two Term handwriting intervention program.",
+    "A preview of the tailored Two Term handwriting program, coming soon.",
 };
 
 /*
@@ -27,7 +28,6 @@ export const metadata: Metadata = {
 const demoStudent = {
   initials: "A.B.",
   yearLevel: "Year 2",
-  screenedOn: "in an example screening",
   flagged: [
     "postural-control",
     "fine-motor-control",
@@ -40,19 +40,56 @@ export default function ProgramsPage() {
   const program = buildProgram(demoStudent.flagged);
   const counts = sessionCounts(program);
 
+  // The mock-up shows week 1 in full and the next two locked; the rest of the
+  // twenty fade out below.
+  const [firstWeek, ...rest] = program.weeks;
+  const nextWeeks = rest.slice(0, 2);
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-16">
       <p className="text-sm font-semibold text-msot-blue">
         Handwriting programs
       </p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight text-msot-navy sm:text-4xl">
-        A tailored Two Term program
+        Two Term Program: Coming Soon
       </h1>
-      <p className="mt-4 text-lg leading-8 text-foreground/70">
-        Once a student has been screened, their flagged foundations become a
-        weekly program: one short session a week, for twenty weeks. Below is a
-        worked example so you can see exactly what a teacher would receive.
-      </p>
+
+      {/*
+        The heading carries the "coming soon" on its own, so the lead is left
+        plain — a loud banner underneath would only say the same thing twice.
+
+        Sense stands beside the lead with his feet on the top edge of the
+        yellow panel below. `-bottom-10` is exactly the panel's `mt-10`, so he
+        lands on the edge rather than crossing it. The paragraphs carry
+        matching right padding so the text never runs beneath him.
+
+        The source is 650px wide for a slot at most 128px: a decorative figure
+        still has to hold up on a retina screen, where that slot is 256 real
+        pixels.
+      */}
+      <div className="relative">
+        <Image
+          src="/brand/sense-mascot.webp"
+          alt=""
+          aria-hidden
+          width={650}
+          height={1163}
+          priority
+          className="pointer-events-none absolute -bottom-10 right-0 hidden w-24 select-none sm:block lg:w-32"
+        />
+
+        <p className="mt-5 text-lg font-medium leading-8 text-msot-navy sm:pr-36 lg:pr-44">
+          Here is a preview of what is coming.
+        </p>
+
+        <p className="mt-4 text-lg leading-8 text-foreground/70 sm:pr-36 lg:pr-44">
+          Once a student has been screened, their flagged foundations become a
+          weekly program: short sessions run a few times a week, across two
+          school terms.
+          Below is a worked example so you can see exactly what a teacher would
+          receive.
+        </p>
+      </div>
 
       {/*
         The example program and the shape of a session share one yellow panel.
@@ -69,10 +106,10 @@ export default function ProgramsPage() {
             {demoStudent.initials} · {demoStudent.yearLevel}
           </h2>
           <p className="mt-1.5 text-sm leading-6 text-white/85">
-            Flagged in {program.domains.length} foundations{" "}
-            {demoStudent.screenedOn}. The program focuses on the {MAX_DOMAINS}{" "}
-            areas of greatest need, with the most-affected area coming round
-            most often.
+            Flagged are {program.domains.length} foundations your student
+            needs the most assistance with to improve their handwriting. The
+            program focuses on these {MAX_DOMAINS}, with the most-affected area
+            coming round most often.
           </p>
 
           <ul className="mt-4 grid gap-1.5 sm:grid-cols-2">
@@ -140,9 +177,9 @@ export default function ProgramsPage() {
         </div>
       </section>
 
-      {/* The twenty weeks, shown as a screenshot rather than something to use */}
+      {/* The program itself, shown as a screenshot rather than something to use */}
       <section className="mt-12">
-        <h2 className="text-xl font-bold text-msot-navy">The twenty weeks</h2>
+        <h2 className="text-xl font-bold text-msot-navy">The Two Term program</h2>
         <p className="mt-2 leading-7 text-foreground/70">
           Weeks unlock one at a time: each session opens only once the week
           before it has been completed, so the program is worked through as a
@@ -189,49 +226,87 @@ export default function ProgramsPage() {
                   ))}
                 </div>
 
-                {/* the weeks */}
-                <ol className="mt-3 space-y-1.5">
-                  {program.weeks.map((w) => (
-                    <li
-                      key={w.week}
-                      className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 ${
-                        w.week === 1
-                          ? "border-msot-blue/30 bg-white"
-                          : "border-black/[.07] bg-black/[.02]"
-                      }`}
-                    >
-                      <span
-                        className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-bold ${
-                          w.week === 1
-                            ? "bg-msot-blue text-white"
-                            : "bg-black/[.06] text-foreground/40"
-                        }`}
-                      >
-                        {w.week}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span
-                          className={`block truncate text-[9px] font-semibold uppercase tracking-wide ${
-                            w.week === 1
-                              ? "text-msot-blue"
-                              : "text-foreground/35"
-                          }`}
-                        >
-                          {w.domain.title}
+                {/*
+                  Only the first three weeks, and only week 1 opened out.
+                  Twenty locked rows made the program look like a wall of
+                  work; showing one real session and letting the rest fade
+                  says "a short weekly session" instead. The count below the
+                  mock-up carries the fact that there are twenty.
+                */}
+                <div className="relative mt-3">
+                  <ol className="space-y-1.5">
+                    {/* Week 1, opened out — a real session from the content. */}
+                    <li className="rounded-lg border border-msot-blue/30 bg-white px-3 py-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-msot-blue text-[10px] font-bold text-white">
+                          1
                         </span>
-                        <span
-                          className={`block truncate text-xs font-semibold ${
-                            w.week === 1
-                              ? "text-msot-navy"
-                              : "text-foreground/40"
-                          }`}
-                        >
-                          {w.week === 1 ? w.session.title : "Locked"}
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[9px] font-semibold uppercase tracking-wide text-msot-blue">
+                            {firstWeek.domain.title}
+                          </span>
+                          <span className="block truncate text-xs font-semibold text-msot-navy">
+                            {firstWeek.session.title}
+                          </span>
                         </span>
-                      </span>
+                      </div>
+
+                      <div className="mt-2.5 border-t border-black/[.06] pt-2.5 pl-8">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/45">
+                          You&apos;ll need
+                        </p>
+                        <p className="mt-0.5 text-[11px] leading-5 text-foreground/70">
+                          {firstWeek.session.youNeed}
+                        </p>
+
+                        <p className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-foreground/45">
+                          What to do
+                        </p>
+                        <ol className="mt-1 space-y-1">
+                          {firstWeek.session.whatToDo.map((step, i) => (
+                            <li key={step} className="flex gap-2">
+                              <span className="mt-0.5 text-[10px] font-bold text-msot-blue">
+                                {i + 1}
+                              </span>
+                              <span className="text-[11px] leading-5 text-foreground/70">
+                                {step}
+                              </span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
                     </li>
-                  ))}
-                </ol>
+
+                    {/* Weeks 2 and 3, locked — enough to show it continues. */}
+                    {nextWeeks.map((w) => (
+                      <li
+                        key={w.week}
+                        className="flex items-center gap-2.5 rounded-lg border border-black/[.07] bg-black/[.02] px-3 py-2"
+                      >
+                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-black/[.06] text-[10px] font-bold text-foreground/40">
+                          {w.week}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[9px] font-semibold uppercase tracking-wide text-foreground/35">
+                            {w.domain.title}
+                          </span>
+                          <span className="block truncate text-xs font-semibold text-foreground/40">
+                            Locked
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+
+                  {/*
+                    Fades the last row into the page so the list reads as cut
+                    short rather than finished. Purely decorative.
+                  */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 -bottom-4 h-16 bg-gradient-to-b from-transparent to-white"
+                  />
+                </div>
               </div>
             </div>
 
@@ -239,10 +314,55 @@ export default function ProgramsPage() {
             <div className="mx-auto h-3 rounded-b-lg bg-msot-navy" />
             <div className="mx-auto h-1.5 w-1/3 rounded-b-xl bg-msot-navy/60" />
           </div>
-          <figcaption className="mt-4 text-center text-sm text-foreground/50">
-            How the program looks once a student has been screened.
-          </figcaption>
         </figure>
+      </section>
+
+      {/* The printable worksheets, previewed as two real pages side by side. */}
+      <section className="mt-12">
+        <h2 className="text-xl font-bold text-msot-navy">
+          The printable worksheets
+        </h2>
+        <p className="mt-2 leading-7 text-foreground/70">
+          Each session comes with a printable practice sheet built on one
+          movement at a time. Two pages from the first set are shown below.
+        </p>
+
+        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+          {[
+            {
+              src: "/worksheets/worksheet-1.webp",
+              // Kept for the alt text only: the visible captions were removed,
+              // but a screen reader still needs to know which sheet is which.
+              label: "Page 1 — how to use a practice sheet",
+            },
+            {
+              src: "/worksheets/worksheet-2.webp",
+              label: "Page 2 — Building Block 1, straight lines",
+            },
+          ].map((sheet) => (
+            <figure key={sheet.src}>
+              {/*
+                A plain framed page rather than a device mock-up: these are
+                printed on paper, so anything screen-shaped would misdescribe
+                them. Not clickable, because there is nothing to download yet.
+              */}
+              <div className="overflow-hidden rounded-xl border border-black/10 bg-white shadow-sm">
+                <Image
+                  src={sheet.src}
+                  alt={`Worksheet preview: ${sheet.label}`}
+                  width={1100}
+                  height={1213}
+                  className="h-auto w-full select-none"
+                />
+              </div>
+            </figure>
+          ))}
+        </div>
+
+        <p className="mt-5 rounded-xl bg-msot-yellow/10 px-5 py-4 text-sm leading-6 text-foreground/70">
+          These sheets are part of the program and are not available to
+          download yet.
+        </p>
       </section>
 
       {/*
@@ -253,11 +373,12 @@ export default function ProgramsPage() {
       */}
       <div className="relative mt-12 rounded-2xl border border-msot-teal/25 bg-msot-teal/[.06] p-7">
         <h2 className="text-2xl font-bold leading-snug text-msot-navy">
-          Screen a student now and build a program
+          Screen a student now
         </h2>
         <p className="mt-2 max-w-lg leading-7 text-foreground/70">
-          Screen a student across the eight foundations and their Two Term
-          program is built from the areas that need support.
+          Screening takes a few minutes and gives you a result you can use
+          today. It is also what the Two Term program will be built from, so
+          screening now is the way to be ready when it opens.
         </p>
         <ScreenAStudentLink className="mt-6" />
 
